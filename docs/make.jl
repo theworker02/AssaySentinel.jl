@@ -11,7 +11,6 @@ makedocs(;
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://theworker02.github.io/AssaySentinel.jl",
-        assets = ["assets/logo.svg"],
         footer = "AssaySentinel.jl is not a diagnostic medical device.",
     ),
     pages = [

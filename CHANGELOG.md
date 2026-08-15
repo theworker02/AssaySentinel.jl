@@ -13,6 +13,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `docs/Project.toml` uses the General-registry UUID for DocumenterCitations
 - Citation metadata matches package version 1.3.0
 - Duplicate `_truthy` no longer overwrites during package precompile
+- Documenter no longer registers the SVG logo as an HTML asset (unsupported class)
 
 ## [1.3.0] - 2026-08-15
 
