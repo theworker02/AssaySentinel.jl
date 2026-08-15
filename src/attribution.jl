@@ -6,7 +6,7 @@
 Score nearby operational events. Language is restricted to association.
 """
 function attribute_change(change_time::DateTime, timeline::EventTimeline;
-                          window::Period = Day(14))
+    window::Period = Day(14))
     nearby = events_near(timeline, change_time; window)
     isempty(nearby) && return AttributionResult(nothing, 0.0,
         "No operational event was recorded within the association window.",

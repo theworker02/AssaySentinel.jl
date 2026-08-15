@@ -7,11 +7,11 @@ Compare detection delay, false-positive rate, and sensitivity on simulated
 streams. Useful as a research-platform harness for new detectors.
 """
 function evaluate_detector(kind::Symbol = :cusum;
-                           nrep::Int = 20,
-                           n::Int = 800,
-                           drift::Symbol = :step,
-                           drift_start::Int = 500,
-                           rng::AbstractRNG = Random.default_rng())
+    nrep::Int = 20,
+    n::Int = 800,
+    drift::Symbol = :step,
+    drift_start::Int = 500,
+    rng::AbstractRNG = Random.default_rng())
     delays = Float64[]
     tp = 0
     fp = 0
@@ -51,8 +51,8 @@ function evaluate_detector(kind::Symbol = :cusum;
 end
 
 function evaluate_detector(detector::AbstractDetector; nrep::Int = 20, n::Int = 400,
-                           drift::Symbol = :step, drift_start::Int = 250,
-                           rng::AbstractRNG = Random.default_rng())
+    drift::Symbol = :step, drift_start::Int = 250,
+    rng::AbstractRNG = Random.default_rng())
     tp = fp = fn = tn = 0
     for _ in 1:nrep
         pos = simulate_assay(; n, drift, drift_start, rng)

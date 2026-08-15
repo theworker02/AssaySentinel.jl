@@ -9,9 +9,9 @@ Models: `:linear`, `:weighted_linear`, `:polynomial`, `:robust`,
 `:spline`, `:fourpl`.
 """
 function calibrate(concentrations::AbstractVector, responses::AbstractVector;
-                   model::Symbol = :linear,
-                   weights = nothing,
-                   degree::Int = 2)
+    model::Symbol = :linear,
+    weights = nothing,
+    degree::Int = 2)
     x, y = _xy_finite(concentrations, responses)
     n = length(x)
     n < 3 && throw(InsufficientDataError(3, n, "calibrate"))
@@ -53,8 +53,8 @@ end
 
 function _curve(model, β, x, y, yhat; weights = nothing, extra = EmptyMeta)
     CalibrationCurve(model, collect(Float64, β), sqrt(mean(abs2, y .- yhat)),
-                     length(y), _r2(y, yhat), weights, collect(x), collect(y),
-                     Any[], extra)
+        length(y), _r2(y, yhat), weights, collect(x), collect(y),
+        Any[], extra)
 end
 
 function _cal_ols(x, y, model)
@@ -94,8 +94,8 @@ function _cal_spline(x, y)
     if fit === nothing
         c = _cal_ols(x, y, :linear)
         return CalibrationCurve(:spline, c.coefficients, c.residual_sd, c.n, c.r_squared,
-                                nothing, c.concentrations, c.responses, Any[],
-                                (; fallback = :linear))
+            nothing, c.concentrations, c.responses, Any[],
+            (; fallback = :linear))
     end
     xs, ys, M = fit
     yhat = [_eval_natural_cubic(xs, ys, M, xi) for xi in x]
@@ -202,7 +202,8 @@ function _cal_fourpl(x, y)
 end
 
 function predict_response(curve::CalibrationCurve, x::Real)
-    if curve.model === :linear || curve.model === :weighted_linear || curve.model === :robust
+    if curve.model === :linear || curve.model === :weighted_linear ||
+       curve.model === :robust
         return curve.coefficients[1] + curve.coefficients[2] * x
     elseif curve.model === :polynomial
         s = 0.0
@@ -254,7 +255,7 @@ function calibration_diagnostics(curve::CalibrationCurve)
     lof = _lack_of_fit(x, y, yhat, npar)
     names = if curve.model === :fourpl && length(curve.coefficients) >= 4
         (; a = curve.coefficients[1], hill = curve.coefficients[2],
-         ec50 = curve.coefficients[3], d = curve.coefficients[4])
+            ec50 = curve.coefficients[3], d = curve.coefficients[4])
     else
         EmptyMeta
     end
@@ -275,7 +276,8 @@ end
 function _cal_nparams(curve::CalibrationCurve)
     curve.model === :fourpl && return 4
     curve.model === :polynomial && return length(curve.coefficients)
-    curve.model === :spline && return get(curve.metadata, :knots, length(curve.coefficients))
+    curve.model === :spline &&
+        return get(curve.metadata, :knots, length(curve.coefficients))
     2
 end
 

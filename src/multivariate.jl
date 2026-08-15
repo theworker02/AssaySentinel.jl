@@ -10,16 +10,18 @@
 - `:energy` — multivariate energy distance between halves
 """
 function detect_drift(X::AbstractMatrix;
-                      method::Symbol = :mahalanobis,
-                      timestamps = nothing,
-                      baseline_frac::Float64 = 0.4)
+    method::Symbol = :mahalanobis,
+    timestamps = nothing,
+    baseline_frac::Float64 = 0.4)
     n, p = size(X)
-    n < 12 && return DriftResult(; detected = false, detector = method, kind = :multivariate,
-                                 evidence = ["Multivariate drift needs ≥ 12 complete rows."])
+    n < 12 &&
+        return DriftResult(; detected = false, detector = method, kind = :multivariate,
+            evidence = ["Multivariate drift needs ≥ 12 complete rows."])
     M = _finite_rows(X)
     n = size(M, 1)
-    n < 12 && return DriftResult(; detected = false, detector = method, kind = :multivariate,
-                                 evidence = ["Too many non-finite rows."])
+    n < 12 &&
+        return DriftResult(; detected = false, detector = method, kind = :multivariate,
+            evidence = ["Too many non-finite rows."])
     n0 = max(8, round(Int, baseline_frac * n))
     B = M[1:n0, :]
     C = M[(n0 + 1):end, :]
@@ -80,7 +82,9 @@ function _mv_mahalanobis(B, C, n0)
         detector = :mahalanobis,
         kind = :multivariate,
         evidence = detected ?
-                   ["Mean Mahalanobis distance $(round(md; digits=3)) exceeded √p baseline."] :
+                   [
+            "Mean Mahalanobis distance $(round(md; digits=3)) exceeded √p baseline.",
+        ] :
                    String["Current window remains inside the baseline Mahalanobis envelope."],
         details = (; mean_distance = md, p),
     )

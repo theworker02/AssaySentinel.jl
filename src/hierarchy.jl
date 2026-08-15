@@ -15,11 +15,11 @@ Random-effects site model (DerSimonian–Laird / empirical Bayes):
 shared change). The default `:eb` path is stdlib-only.
 """
 function hierarchical_sites(data;
-                            site,
-                            value = :value,
-                            timestamps = :timestamp,
-                            method::Symbol = :eb,
-                            rng::AbstractRNG = Random.default_rng())
+    site,
+    value = :value,
+    timestamps = :timestamp,
+    method::Symbol = :eb,
+    rng::AbstractRNG = Random.default_rng())
     rows = collect(_table_rows(data))
     sites = String[]
     vals = Float64[]
@@ -38,9 +38,9 @@ function hierarchical_sites(data;
 end
 
 function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
-                            timestamps = nothing,
-                            method::Symbol = :eb,
-                            rng::AbstractRNG = Random.default_rng())
+    timestamps = nothing,
+    method::Symbol = :eb,
+    rng::AbstractRNG = Random.default_rng())
     length(values) == length(sites) ||
         throw(ArgumentError("values and sites must have the same length"))
     vals = Float64[]
@@ -57,7 +57,8 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
             push!(ts, DateTime(2020, 1, 1) + Hour(i))
         end
     end
-    length(vals) < 12 && throw(InsufficientDataError(12, length(vals), "hierarchical_sites"))
+    length(vals) < 12 &&
+        throw(InsufficientDataError(12, length(vals), "hierarchical_sites"))
     uniq = sort(unique(labs))
     length(uniq) < 2 && throw(ArgumentError("hierarchical_sites needs at least two sites"))
 
@@ -68,7 +69,9 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     ns = length.(groups)
     means = mean.(groups)
     sds = [length(g) >= 2 ? std(g) : 0.0 for g in groups]
-    σ2 = sum((ns[i] - 1) * sds[i]^2 for i in eachindex(uniq)) / max(sum(ns) - length(uniq), 1)
+    σ2 =
+        sum((ns[i] - 1) * sds[i]^2 for i in eachindex(uniq)) /
+        max(sum(ns) - length(uniq), 1)
     σ2 = σ2 > 0 && isfinite(σ2) ? σ2 : 1.0
     w = [n / σ2 for n in ns]
     μ = sum(w .* means) / sum(w)
@@ -82,7 +85,8 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
         se2 = σ2 / ns[i]
         B = τ2 / (τ2 + se2)
         α = B * (means[i] - μ)
-        d = length(groups[i]) >= 16 ?
+        d =
+            length(groups[i]) >= 16 ?
             detect_drift(groups[i]; kind = :auto, timestamps = times[i], rng) :
             DriftResult(; detected = false, detector = :none, kind = :unspecified)
         push!(drifts, d)
@@ -141,7 +145,12 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     HierarchicalSiteResult(
         effects, μ, τ, sqrt(σ2), global_d, Qd, pd, attr, conc, ev,
         "Hierarchical site model. Temporal association across sites is not causation. Not a diagnostic device.",
-        (; method = :eb, Q_location = Qloc, n = length(vals), schema_version = string(SCHEMA_VERSION)),
+        (;
+            method = :eb,
+            Q_location = Qloc,
+            n = length(vals),
+            schema_version = string(SCHEMA_VERSION),
+        ),
     )
 end
 
@@ -154,7 +163,11 @@ function _chi2_sf(q, ν)
 end
 
 function _turing_hierarchical_sites(vals, labs, ts, uniq; rng)
-    throw(ArgumentError("hierarchical_sites(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`."))
+    throw(
+        ArgumentError(
+            "hierarchical_sites(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`.",
+        ),
+    )
 end
 
 """
@@ -164,7 +177,7 @@ Analyze each site stream and combine them with `hierarchical_sites`.
 `streams` maps site name → `AssayStream`.
 """
 function analyze(study::Study, streams::AbstractDict;
-                 rng::AbstractRNG = Random.default_rng(), kwargs...)
+    rng::AbstractRNG = Random.default_rng(), kwargs...)
     site_reports = Dict{String, QualityReport}()
     rows = NamedTuple[]
     seed = rand(rng, UInt64)
@@ -173,15 +186,18 @@ function analyze(study::Study, streams::AbstractDict;
         site_reports[string(name)] = analyze(stream; rng = local_rng, kwargs...)
         for m in stream.measurements
             m.value isa Number && isfinite(Float64(m.value)) || continue
-            push!(rows, (; site = string(name), value = Float64(m.value),
-                         timestamp = m.timestamp))
+            push!(
+                rows,
+                (; site = string(name), value = Float64(m.value),
+                    timestamp = m.timestamp),
+            )
         end
     end
     hier = hierarchical_sites(rows; site = :site, value = :value,
-                              timestamps = :timestamp, rng = Random.Xoshiro(seed))
+        timestamps = :timestamp, rng = Random.Xoshiro(seed))
     StudyReport(study.name, hier, site_reports, SAFETY_NOTICE,
-                string(SCHEMA_VERSION), string(PACKAGE_VERSION),
-                (; n_sites = length(site_reports), study_sites = [s.name for s in study.sites]))
+        string(SCHEMA_VERSION), string(PACKAGE_VERSION),
+        (; n_sites = length(site_reports), study_sites = [s.name for s in study.sites]))
 end
 
 """
@@ -200,10 +216,10 @@ mutable struct StudySentinel
 end
 
 function StudySentinel(baselines::AbstractDict{<:AbstractString, Baseline};
-                       name::AbstractString = "study",
-                       min_sites::Int = 2,
-                       window::Period = Day(7),
-                       cooldown::Period = Hour(6))
+    name::AbstractString = "study",
+    min_sites::Int = 2,
+    window::Period = Day(7),
+    cooldown::Period = Hour(6))
     sent = Dict{String, Sentinel}()
     for (k, b) in baselines
         sent[string(k)] = Sentinel(b; cooldown)
@@ -229,15 +245,20 @@ function update!(study::StudySentinel, site::AbstractString, measurement)
             end
         end
     end
-    sites_hit = unique(begin
-        # site identity is the sentinel key that owns the alert
-        [k for (k, sent) in study.sentinels if any(a -> t - a.timestamp <= study.window, sent.alerts)]
-    end)
+    sites_hit = unique(
+        begin
+            # site identity is the sentinel key that owns the alert
+            [
+                k for (k, sent) in study.sentinels if
+                any(a -> t - a.timestamp <= study.window, sent.alerts)
+            ]
+        end,
+    )
     if length(sites_hit) >= study.min_sites
         a = Alert(; severity = :warning, timestamp = t,
-                  message = "Concordant analytical signals at $(length(sites_hit)) sites (not causation).",
-                  kind = :hierarchical,
-                  evidence = ["Sites: $(join(sites_hit, ", "))."])
+            message = "Concordant analytical signals at $(length(sites_hit)) sites (not causation).",
+            kind = :hierarchical,
+            evidence = ["Sites: $(join(sites_hit, ", "))."])
         push!(study.alerts, a)
         for cb in study.callbacks
             cb(a)
@@ -251,7 +272,7 @@ function Base.show(io::IO, r::HierarchicalSiteResult)
     println(io, "HierarchicalSiteResult")
     println(io, "sites: ", length(r.sites), "  attribution: ", r.attribution)
     println(io, "grand mean: ", round(r.grand_mean; digits = 3),
-            "  τ: ", round(r.between_sd; digits = 3))
+        "  τ: ", round(r.between_sd; digits = 3))
     print(io, "concordance: ", round(r.concordance; digits = 2))
 end
 

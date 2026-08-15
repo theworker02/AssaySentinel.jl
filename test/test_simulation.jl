@@ -27,7 +27,7 @@
     end
 
     ev = evaluate_detector(:likelihood; nrep = 4, n = 160, drift_start = 90,
-                           rng = Random.Xoshiro(19))
+        rng = Random.Xoshiro(19))
     @test ev.sensitivity ≥ 0.5
 
     demo = showcase_dataset(; rng = Random.Xoshiro(21))

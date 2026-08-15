@@ -1,46 +1,29 @@
 # Roadmap
 
-AssaySentinel versions before 1.0 may change APIs. 1.0 waits until public
-APIs, statistical behavior, report schemas, and the provenance format are
-genuinely stable.
+AssaySentinel 1.3.0 is the current published line. Later 1.x releases stay
+backward compatible with the public API frozen since 1.0.
 
-## v0.1
+## v1.3.0 — current
 
-- Core data model and Tables support
-- QC rules and Levey–Jennings data
-- CUSUM / likelihood / PELT / robust / Fearnhead Bayesian / energy change detection
-- Empirical-Bayes ComBat; natural cubic spline calibration
-- Reconstruction reports with embedded SVG charts and provenance graphs
-- Turing.jl and OnlineStats.jl extensions; live Documenter (`docs/live.jl`)
-- Drift results and multivariate monitors
-- Simulation, provenance, documentation
-
-## v0.2 — current
-
-- Quantile and RUV-lite batch correction; multi-feature ComBat
-- Calibration diagnostics (runs test, lack-of-fit, 4PL names)
+- Hierarchical multi-site monitoring (`hierarchical_sites`, `StudySentinel`, `StudyReport`)
+- Empirical-Bayes site shrinkage and study-level concordance alerts
+- Reference intervals: Box–Cox, Horn, LMS curves
+- Passing–Bablok confidence intervals; calibration diagnostics
+- Quantile / RUV-lite / multi-feature ComBat batch correction
 - Lot and instrument comparison charts (core SVG + Makie)
-- Box–Cox, Horn, and LMS reference intervals / curves
-- Passing–Bablok slope and intercept confidence intervals
-- `:auto` uses CUSUM crossing count to prefer PELT for multiple changes
+- Turing.jl and OnlineStats.jl extensions; live Documenter (`docs/live.jl`)
 
-## v0.3
+## Later
 
-- Automatic detector selection refinements
-- Multi-feature ComBat (shrinkage across analytes)
-- Stronger Turing models (multiple cuts, hierarchical sites)
+- Stronger Turing models (multiple cuts, hierarchical site intercepts beyond the extension stub)
+- Independent validation notes beyond `VALIDATION.md`
+- General registry installation (`Pkg.add("AssaySentinel")`) after JuliaRegistrator
 
-## v0.4
+## Compatibility freeze
 
-- Turing.jl Bayesian extension (change-point probability, hierarchical sites)
-- Multi-site hierarchical monitoring
-- Advanced continuous reference curves (LMS-style)
+Only after, and only as a major bump if needed:
 
-## v1.0
-
-Only after:
-
-- Public API freeze
+- Public API freeze remains (`API_STABLE_SINCE = v"1.0.0"`)
 - Statistical behavior freeze for default detectors
 - Stable report and provenance schemas
 - Independent validation notes

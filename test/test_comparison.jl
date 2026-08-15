@@ -24,8 +24,10 @@
     lc = compare_lots(lots, :lot)
     @test lc.shift_suspected
 
-    sites = [(; site = i <= 40 ? "A" : "B", value = (i <= 40 ? 10.0 : 12.0) + 0.2 * randn(rng))
-             for i in 1:80]
+    sites = [
+        (; site = i <= 40 ? "A" : "B", value = (i <= 40 ? 10.0 : 12.0) + 0.2 * randn(rng))
+        for i in 1:80
+    ]
     sc = compare_sites(sites; site = :site, value = :value)
     @test sc.site_effect_suspected
     @test occursin("not causation", sc.notes)

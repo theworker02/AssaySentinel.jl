@@ -4,7 +4,8 @@ function _measurement_uncertainties(ms::AbstractVector{<:Measurement})
     u = Union{Nothing, Float64}[]
     sizehint!(u, length(ms))
     for m in ms
-        if m.uncertainty !== nothing && isfinite(Float64(m.uncertainty)) && m.uncertainty > 0
+        if m.uncertainty !== nothing && isfinite(Float64(m.uncertainty)) &&
+           m.uncertainty > 0
             push!(u, Float64(m.uncertainty))
         else
             push!(u, nothing)
@@ -14,7 +15,7 @@ function _measurement_uncertainties(ms::AbstractVector{<:Measurement})
 end
 
 function inverse_variance_mean(values::AbstractVector{<:Real},
-                               uncs::AbstractVector)
+    uncs::AbstractVector)
     num = 0.0
     den = 0.0
     n = 0
@@ -39,8 +40,8 @@ independent analytical and measurement components). Magnitude SE uses
 `combined_sd / √n` scaled to a relative magnitude when `magnitude` is relative.
 """
 function uncertainty_budget(measurements::AbstractVector{<:Measurement},
-                            values::AbstractVector{<:Real};
-                            magnitude::Real = 0.0)
+    values::AbstractVector{<:Real};
+    magnitude::Real = 0.0)
     uncs = _measurement_uncertainties(measurements)
     present = [u for u in uncs if u !== nothing]
     n = length(values)

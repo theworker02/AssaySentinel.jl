@@ -96,8 +96,18 @@ struct ReagentLot
     metadata::NamedTuple
 end
 
-ReagentLot(id::AbstractString; analyte = nothing, opened_at = nothing, metadata = EmptyMeta) =
-    ReagentLot(String(id), analyte === nothing ? nothing : Symbol(analyte), opened_at, metadata)
+ReagentLot(
+    id::AbstractString;
+    analyte = nothing,
+    opened_at = nothing,
+    metadata = EmptyMeta,
+) =
+    ReagentLot(
+        String(id),
+        analyte === nothing ? nothing : Symbol(analyte),
+        opened_at,
+        metadata,
+    )
 
 """
     Method
@@ -171,7 +181,7 @@ function ControlSample(;
 )
     sd > 0 || throw(ArgumentError("ControlSample sd must be positive"))
     ControlSample(String(name), Float64(target), Float64(sd), String(unit),
-                  _nothing_string(level), metadata)
+        _nothing_string(level), metadata)
 end
 
 """
@@ -228,7 +238,7 @@ function Calibration(;
     metadata = EmptyMeta,
 )
     Calibration(String(id), timestamp, _nothing_string(instrument),
-                _nothing_string(reagent_lot), model, metadata)
+        _nothing_string(reagent_lot), model, metadata)
 end
 
 """
@@ -292,7 +302,7 @@ struct CalibrationEvent <: AbstractEvent
 end
 
 CalibrationEvent(timestamp::DateTime, calibration_id::AbstractString;
-                 label = "calibration", metadata = EmptyMeta) =
+    label = "calibration", metadata = EmptyMeta) =
     CalibrationEvent(timestamp, String(calibration_id), String(label), metadata)
 
 struct LotChangeEvent <: AbstractEvent
@@ -304,8 +314,14 @@ struct LotChangeEvent <: AbstractEvent
 end
 
 LotChangeEvent(timestamp::DateTime, to_lot::AbstractString;
-               from_lot = nothing, label = "reagent lot change", metadata = EmptyMeta) =
-    LotChangeEvent(timestamp, _nothing_string(from_lot), String(to_lot), String(label), metadata)
+    from_lot = nothing, label = "reagent lot change", metadata = EmptyMeta) =
+    LotChangeEvent(
+        timestamp,
+        _nothing_string(from_lot),
+        String(to_lot),
+        String(label),
+        metadata,
+    )
 
 struct MaintenanceEvent <: AbstractEvent
     timestamp::DateTime
@@ -313,7 +329,11 @@ struct MaintenanceEvent <: AbstractEvent
     metadata::NamedTuple
 end
 
-MaintenanceEvent(timestamp::DateTime; label = "instrument maintenance", metadata = EmptyMeta) =
+MaintenanceEvent(
+    timestamp::DateTime;
+    label = "instrument maintenance",
+    metadata = EmptyMeta,
+) =
     MaintenanceEvent(timestamp, String(label), metadata)
 
 struct MethodChangeEvent <: AbstractEvent
@@ -325,9 +345,9 @@ struct MethodChangeEvent <: AbstractEvent
 end
 
 MethodChangeEvent(timestamp::DateTime, to_method::AbstractString;
-                  from_method = nothing, label = "method change", metadata = EmptyMeta) =
+    from_method = nothing, label = "method change", metadata = EmptyMeta) =
     MethodChangeEvent(timestamp, _nothing_string(from_method), String(to_method),
-                      String(label), metadata)
+        String(label), metadata)
 
 struct SoftwareUpdateEvent <: AbstractEvent
     timestamp::DateTime
@@ -353,7 +373,11 @@ struct TemperatureEvent <: AbstractEvent
     metadata::NamedTuple
 end
 
-TemperatureEvent(timestamp::DateTime; label = "temperature excursion", metadata = EmptyMeta) =
+TemperatureEvent(
+    timestamp::DateTime;
+    label = "temperature excursion",
+    metadata = EmptyMeta,
+) =
     TemperatureEvent(timestamp, String(label), metadata)
 
 struct SiteEvent <: AbstractEvent
@@ -446,8 +470,8 @@ function DriftResult(;
     details = EmptyMeta,
 )
     DriftResult(detected, Float64(probability), Float64(magnitude), direction,
-                start_time, start_index, detector, kind,
-                Vector{String}(evidence), details)
+        start_time, start_index, detector, kind,
+        Vector{String}(evidence), details)
 end
 
 """
@@ -508,8 +532,8 @@ struct QCRule
 end
 
 function QCRule(name::AbstractString, fn::Function;
-                description::AbstractString = "",
-                severity::Symbol = :warning)
+    description::AbstractString = "",
+    severity::Symbol = :warning)
     QCRule(String(name), String(description), fn, severity)
 end
 
@@ -814,7 +838,11 @@ struct AssayPanel
     metadata::NamedTuple
 end
 
-AssayPanel(name::AbstractString; streams = Dict{Symbol, AssayStream}(), metadata = EmptyMeta) =
+AssayPanel(
+    name::AbstractString;
+    streams = Dict{Symbol, AssayStream}(),
+    metadata = EmptyMeta,
+) =
     AssayPanel(String(name), streams, metadata)
 
 function Base.push!(panel::AssayPanel, stream::AssayStream)

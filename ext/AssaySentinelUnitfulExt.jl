@@ -4,7 +4,8 @@ using AssaySentinel
 using Unitful
 
 function AssaySentinel.check_units(a::Unitful.Units, b::Unitful.Units)
-    dimension(a) == dimension(b) || throw(AssaySentinel.UnitMismatchError(string(a), string(b)))
+    dimension(a) == dimension(b) ||
+        throw(AssaySentinel.UnitMismatchError(string(a), string(b)))
     return nothing
 end
 

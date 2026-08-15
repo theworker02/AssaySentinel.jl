@@ -60,15 +60,18 @@ function simulate_assay(;
                 v += (rand(rng) < 0.5 ? -1 : 1) * 6σ
             end
         end
-        push!(stream, Measurement(;
-            value = v,
-            timestamp = t,
-            unit,
-            lot,
-            instrument = inst,
-            batch = "B$(div(i - 1, 48) + 1)",
-            control = control_every > 0 && i % control_every == 0,
-        ))
+        push!(
+            stream,
+            Measurement(;
+                value = v,
+                timestamp = t,
+                unit,
+                lot,
+                instrument = inst,
+                batch = "B$(div(i - 1, 48) + 1)",
+                control = control_every > 0 && i % control_every == 0,
+            ),
+        )
     end
     if n_lots > 1
         prev = nothing
@@ -119,17 +122,20 @@ function showcase_dataset(; rng::AbstractRNG = Random.Xoshiro(20260814))
         fail = i in (1100, 1101, 1300, 1301, 1302)
         v = μ + σ * randn(rng)
         fail && (v = μ + 3.6 * σ)
-        push!(stream, Measurement(;
-            value = v,
-            timestamp = t,
-            unit = "mg/dL",
-            lot,
-            instrument = inst,
-            batch = "B$(div(i - 1, 56) + 1)",
-            control = i % 8 == 0 || fail,
-            calibration_id = i >= cal_at ? "CAL-08" : "CAL-07",
-            uncertainty = 0.4,
-        ))
+        push!(
+            stream,
+            Measurement(;
+                value = v,
+                timestamp = t,
+                unit = "mg/dL",
+                lot,
+                instrument = inst,
+                batch = "B$(div(i - 1, 56) + 1)",
+                control = i % 8 == 0 || fail,
+                calibration_id = i >= cal_at ? "CAL-08" : "CAL-07",
+                uncertainty = 0.4,
+            ),
+        )
     end
     truth = (
         lots = lots,

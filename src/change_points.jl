@@ -17,13 +17,13 @@ Methods:
 - `:auto` — choose from sample size, tail weight, missingness, cadence
 """
 function detect_changes(data::AbstractVector;
-                        method::Symbol = :auto,
-                        timestamps = nothing,
-                        sites = nothing,
-                        model::Symbol = :single,
-                        has_controls::Bool = false,
-                        min_size::Int = 8,
-                        rng::AbstractRNG = Random.default_rng())
+    method::Symbol = :auto,
+    timestamps = nothing,
+    sites = nothing,
+    model::Symbol = :single,
+    has_controls::Bool = false,
+    min_size::Int = 8,
+    rng::AbstractRNG = Random.default_rng())
     ts_all = timestamps === nothing ? nothing : collect(timestamps)
     vals = Float64[]
     tkeep = DateTime[]
@@ -53,8 +53,8 @@ function detect_changes(data::AbstractVector;
 
     if n < min_size
         return ChangePointResult(false, Int[], DateTime[], 0.0, chosen, reason, 0.0,
-                                 ["Fewer than $min_size finite observations; change-point scan skipped."],
-                                 (; n, missing_fraction = missing_fraction(data)))
+            ["Fewer than $min_size finite observations; change-point scan skipped."],
+            (; n, missing_fraction = missing_fraction(data)))
     end
 
     raw = if chosen === :cusum
@@ -95,34 +95,44 @@ function detect_changes(data::AbstractVector;
         reason,
         raw.confidence,
         raw.evidence,
-        merge(raw.details, (; n, missing_fraction = missing_fraction(data), rng_used = false)),
+        merge(
+            raw.details,
+            (; n, missing_fraction = missing_fraction(data), rng_used = false),
+        ),
     )
 end
 
 function select_change_method(vals::Vector{Float64}, raw;
-                              has_controls::Bool,
-                              timestamps)
+    has_controls::Bool,
+    timestamps)
     n = length(vals)
     miss = missing_fraction(raw)
-    heavy = excess_kurtosis(vals) > 2.5 || (robust_mad(vals) > 0 && std(vals) / robust_mad(vals) > 1.6)
+    heavy =
+        excess_kurtosis(vals) > 2.5 ||
+        (robust_mad(vals) > 0 && std(vals) / robust_mad(vals) > 1.6)
     regular = timestamps isa AbstractVector{DateTime} && is_regular_cadence(timestamps)
     alarms = _cusum_alarm_count(vals)
     if n < 20
         return :robust_median, "n=$n < 20: robust median CUSUM preferred for small samples."
     elseif miss > 0.15 || !regular && n < 80
-        return :robust_median, "Missingness=$(round(miss; digits=2)) or irregular cadence: robust method."
+        return :robust_median,
+        "Missingness=$(round(miss; digits=2)) or irregular cadence: robust method."
     elseif heavy
-        return :robust_median, "Heavy tails (excess kurtosis or SD/MAD ratio): robust median CUSUM."
+        return :robust_median,
+        "Heavy tails (excess kurtosis or SD/MAD ratio): robust median CUSUM."
     elseif n >= 80 && alarms >= 2
-        return :pelt, "CUSUM crossed the decision interval $alarms times: PELT for multiple mean segments."
+        return :pelt,
+        "CUSUM crossed the decision interval $alarms times: PELT for multiple mean segments."
     elseif has_controls && n < 400
         return :likelihood, "Control-like series with moderate n: Gaussian likelihood scan."
     elseif 80 <= n < 400 && regular
-        return :bayesian, "Moderate regular series (n=$n): Fearnhead product-partition posterior."
+        return :bayesian,
+        "Moderate regular series (n=$n): Fearnhead product-partition posterior."
     elseif n >= 400
         return :pelt, "n=$n ≥ 400: PELT piecewise-mean segmentation."
     else
-        return :cusum, "Default CUSUM (Page 1954) for moderate, approximately regular series."
+        return :cusum,
+        "Default CUSUM (Page 1954) for moderate, approximately regular series."
     end
 end
 
@@ -163,12 +173,17 @@ function _cp_cusum(x::Vector{Float64}; k::Float64 = 0.5, h::Float64 = 5.0)
     detected = !isempty(alarms) || stat > 2 * std(S)
     ev = String[]
     detected && push!(ev, "CUSUM localized a mean-level transition near observation $τ.")
-    !isempty(alarms) && push!(ev, "Sequential CUSUM crossed h=$h at $(length(alarms)) location(s).")
+    !isempty(alarms) &&
+        push!(ev, "Sequential CUSUM crossed h=$h at $(length(alarms)) location(s).")
     (
         detected = detected,
         indices = detected ? unique!(sort!(vcat(alarms, [τ]))) : Int[],
         statistic = stat,
-        confidence = detected ? min(0.99, 0.55 + 0.08 * length(alarms) + 0.1 * (stat / (std(S) + eps()))) : 0.2,
+        confidence = detected ?
+                     min(
+            0.99,
+            0.55 + 0.08 * length(alarms) + 0.1 * (stat / (std(S) + eps())),
+        ) : 0.2,
         evidence = ev,
         details = (; k, h, path_peak = τ),
     )
@@ -178,8 +193,8 @@ function _cp_likelihood(x::Vector{Float64})
     n = length(x)
     ss_full = sum(abs2, x .- mean(x))
     ss_full <= 0 && return (detected = false, indices = Int[], statistic = 0.0,
-                            confidence = 0.0, evidence = String["Zero variance."],
-                            details = (;))
+        confidence = 0.0, evidence = String["Zero variance."],
+        details = (;))
     best_lr = -Inf
     best_τ = 1
     @inbounds for τ in 2:(n - 2)
@@ -195,9 +210,12 @@ function _cp_likelihood(x::Vector{Float64})
     end
     # SIC penalty: log(n)
     detected = best_lr > log(n) + 1.5
-    ev = detected ?
-         ["Likelihood-ratio mean-change scan peaked at observation $best_τ (LR=$(round(best_lr; digits=2)))."] :
-         String["No mean-change LR exceeded the SIC penalty."]
+    ev =
+        detected ?
+        [
+            "Likelihood-ratio mean-change scan peaked at observation $best_τ (LR=$(round(best_lr; digits=2))).",
+        ] :
+        String["No mean-change LR exceeded the SIC penalty."]
     (
         detected = detected,
         indices = detected ? [best_τ] : Int[],
@@ -264,9 +282,12 @@ function _cp_pelt(x::Vector{Float64}; min_size::Int = 8, β = nothing)
     end
     changepoints = filter(c -> 0 < c < n, cps[n + 1])
     detected = !isempty(changepoints)
-    ev = detected ?
-         ["PELT reported $(length(changepoints)) mean-level change(s) with MBIC penalty $(round(pen; digits=2))."] :
-         String["PELT found no change under the MBIC penalty 3 log n."]
+    ev =
+        detected ?
+        [
+            "PELT reported $(length(changepoints)) mean-level change(s) with MBIC penalty $(round(pen; digits=2)).",
+        ] :
+        String["PELT found no change under the MBIC penalty 3 log n."]
     (
         detected = detected,
         indices = changepoints,
@@ -302,9 +323,12 @@ function _cp_rolling(x::Vector{Float64}; window::Int = 0)
         end
     end
     detected = best_p < 0.01
-    ev = detected ?
-         ["Rolling Welch test minimum p=$(round(best_p; digits=4)) at observation $best_i."] :
-         String["Rolling Welch tests did not meet p < 0.01."]
+    ev =
+        detected ?
+        [
+            "Rolling Welch test minimum p=$(round(best_p; digits=4)) at observation $best_i.",
+        ] :
+        String["Rolling Welch tests did not meet p < 0.01."]
     (
         detected = detected,
         indices = detected ? [best_i] : Int[],
@@ -315,8 +339,9 @@ function _cp_rolling(x::Vector{Float64}; window::Int = 0)
     )
 end
 
-_logaddexp(a::Float64, b::Float64) = a == -Inf ? b : b == -Inf ? a :
-    (a > b ? a + log1p(exp(b - a)) : b + log1p(exp(a - b)))
+_logaddexp(a::Float64, b::Float64) =
+    a == -Inf ? b : b == -Inf ? a :
+                    (a > b ? a + log1p(exp(b - a)) : b + log1p(exp(a - b)))
 
 function _log_seg_gaussian(css, css2, a::Int, b::Int, σ2::Float64, μ0::Float64, κ0::Float64)
     m = b - a + 1
@@ -336,11 +361,15 @@ Geometric hazard prior on changepoints; Gaussian observations with known
 variance (sample variance) and a weak conjugate prior on the segment mean.
 Returns MAP locations and the smoothed posterior mass at each index.
 """
-function _cp_bayesian(x::Vector{Float64}; min_size::Int = 8, p::Union{Nothing, Float64} = nothing)
+function _cp_bayesian(
+    x::Vector{Float64};
+    min_size::Int = 8,
+    p::Union{Nothing, Float64} = nothing,
+)
     n = length(x)
     σ2 = var(x)
     σ2 <= 0 && return (detected = false, indices = Int[], statistic = 0.0,
-                       confidence = 0.0, evidence = String["Zero variance."], details = (;))
+        confidence = 0.0, evidence = String["Zero variance."], details = (;))
     μ0 = mean(x)
     κ0 = 0.01
     hazard = p === nothing ? min(0.2, max(1 / sqrt(n), 2 / n)) : Float64(p)
@@ -421,7 +450,8 @@ function _cp_bayesian(x::Vector{Float64}; min_size::Int = 8, p::Union{Nothing, F
     # Posterior peaks (non-maximum suppression)
     peaks = Int[]
     for i in 2:(n - 1)
-        post[i] >= post[i - 1] && post[i] >= post[i + 1] && post[i] >= 0.08 && push!(peaks, i)
+        post[i] >= post[i - 1] && post[i] >= post[i + 1] && post[i] >= 0.08 &&
+            push!(peaks, i)
     end
     kept = Int[]
     for i in peaks
@@ -436,7 +466,9 @@ function _cp_bayesian(x::Vector{Float64}; min_size::Int = 8, p::Union{Nothing, F
     conf = post[mode]
     detected = !isempty(indices) && conf >= 0.08
     ev = if detected
-        ["Fearnhead product-partition posterior mode at $mode (P=$(round(conf; digits=3))); MAP changes at $(join(indices, ", "))."]
+        [
+            "Fearnhead product-partition posterior mode at $mode (P=$(round(conf; digits=3))); MAP changes at $(join(indices, ", ")).",
+        ]
     else
         String["Bayesian product-partition posterior did not concentrate on a change."]
     end
@@ -447,7 +479,7 @@ function _cp_bayesian(x::Vector{Float64}; min_size::Int = 8, p::Union{Nothing, F
         confidence = conf,
         evidence = ev,
         details = (; posterior_mode = mode, posterior_mass = conf,
-                     posterior = post, hazard, map_indices = map_cps),
+            posterior = post, hazard, map_indices = map_cps),
     )
 end
 
@@ -458,8 +490,12 @@ Hierarchical MCMC changepoint. Implemented by `AssaySentinelTuringExt`
 when Turing.jl is loaded; otherwise raises a clear load error.
 """
 function _cp_turing(x::Vector{Float64}; rng::AbstractRNG = Random.default_rng(),
-                    sites = nothing, model::Symbol = :single, kwargs...)
-    throw(ArgumentError("detect_changes(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`."))
+    sites = nothing, model::Symbol = :single, kwargs...)
+    throw(
+        ArgumentError(
+            "detect_changes(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`.",
+        ),
+    )
 end
 
 function _cp_kernel(x::Vector{Float64})
@@ -478,9 +514,12 @@ function _cp_kernel(x::Vector{Float64})
     mid = n ÷ 2
     null = energy_distance(view(x, 1:mid), view(x, (mid + 1):n))
     detected = best > 1.8 * max(null, eps()) && best > 0
-    ev = detected ?
-         ["Energy-distance scan peaked at observation $best_τ (D=$(round(best; digits=4)))."] :
-         String["Energy-distance scan did not exceed the mid-split reference."]
+    ev =
+        detected ?
+        [
+            "Energy-distance scan peaked at observation $best_τ (D=$(round(best; digits=4))).",
+        ] :
+        String["Energy-distance scan did not exceed the mid-split reference."]
     (
         detected = detected,
         indices = detected ? [best_τ] : Int[],

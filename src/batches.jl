@@ -7,9 +7,9 @@ Distinguish likely technical variation from variation associated with an
 experimental grouping. Does **not** correct data.
 """
 function detect_batch_effects(dataset;
-                              batch,
-                              value = :value,
-                              biological_group = nothing)
+    batch,
+    value = :value,
+    biological_group = nothing)
     rows = _table_rows(dataset)
     batches = String[]
     values = Float64[]
@@ -71,7 +71,11 @@ function detect_batch_effects(dataset;
     )
 end
 
-function detect_batch_effects(stream::AssayStream; batch = :batch, biological_group = nothing)
+function detect_batch_effects(
+    stream::AssayStream;
+    batch = :batch,
+    biological_group = nothing,
+)
     detect_batch_effects(stream.measurements; batch, value = :value, biological_group)
 end
 
@@ -92,11 +96,11 @@ Methods:
   When `biological_group` is set, that design is protected (not removed).
 """
 function correct_batch_effects(dataset;
-                               method::Symbol = :median,
-                               batch,
-                               value = :value,
-                               biological_group = nothing,
-                               control = :control)
+    method::Symbol = :median,
+    batch,
+    value = :value,
+    biological_group = nothing,
+    control = :control)
     rows = collect(_table_rows(dataset))
     batches = [string(_rowget(r, batch)) for r in rows]
     vals = Float64[_num_or_nan(_rowget(r, value)) for r in rows]
@@ -104,10 +108,12 @@ function correct_batch_effects(dataset;
     groups = if biological_group === nothing
         nothing
     else
-        [begin
-             g = _rowget(r, biological_group)
-             g === nothing ? "_missing" : string(g)
-         end for r in rows]
+        [
+            begin
+                g = _rowget(r, biological_group)
+                g === nothing ? "_missing" : string(g)
+            end for r in rows
+        ]
     end
     if method === :combat
         corrected, transform = _combat_eb(vals, batches, finite, groups)
@@ -119,8 +125,10 @@ function correct_batch_effects(dataset;
     else
         corrected, transform = _median_center(vals, batches, finite)
     end
-    out = [merge(_row_named(r), (; corrected = corrected[i], original = vals[i]))
-           for (i, r) in enumerate(rows)]
+    out = [
+        merge(_row_named(r), (; corrected = corrected[i], original = vals[i]))
+        for (i, r) in enumerate(rows)
+    ]
     return (data = out, transform = transform, method = method, original_preserved = true)
 end
 
@@ -148,8 +156,8 @@ shrinkage of `γ_b`, `δ_b²`). The protected design `groups` is residualized
 out before standardization and added back after adjustment.
 """
 function _combat_eb(vals::Vector{Float64}, batches::Vector{String},
-                    finite::AbstractVector{Bool},
-                    groups::Union{Nothing, Vector{String}})
+    finite::AbstractVector{Bool},
+    groups::Union{Nothing, Vector{String}})
     y = vals[finite]
     bfin = batches[finite]
     uniq = sort(unique(bfin))
@@ -242,7 +250,7 @@ function _combat_eb(vals::Vector{Float64}, batches::Vector{String},
         )
     end
     transform["_hyper"] = (; mu_gamma = μγ, tau2 = τ2, lambda = λ, theta = θ,
-                            sigma = σ, empirical_bayes = true)
+        sigma = σ, empirical_bayes = true)
     return corrected, transform
 end
 
@@ -274,7 +282,7 @@ function _ruv_lite(vals, batches, finite, controls::AbstractVector{Bool})
     if count(ctrl) < 4
         corr, tr = _median_center(vals, batches, finite)
         tr["_note"] = (; method = :ruv, fallback = :median,
-                        notes = "Fewer than 4 controls; fell back to median centering.")
+            notes = "Fewer than 4 controls; fell back to median centering.")
         return corr, tr
     end
     grand_c = mean(vals[ctrl])
@@ -290,8 +298,6 @@ function _ruv_lite(vals, batches, finite, controls::AbstractVector{Bool})
     return corrected, transform
 end
 
-_truthy(x) = x === true || x == 1 || x == "true" || x == :true
-
 """
     correct_batch_effects(X, batch; method=:combat, design=nothing)
 
@@ -299,15 +305,21 @@ Multi-feature ComBat. `X` is observations × features. Empirical-Bayes
 priors for each batch are estimated **across features** (Johnson et al. 2007).
 """
 function correct_batch_effects(X::AbstractMatrix, batch::AbstractVector;
-                               method::Symbol = :combat,
-                               design = nothing)
+    method::Symbol = :combat,
+    design = nothing)
     n, p = size(X)
     length(batch) == n || throw(ArgumentError("batch length must match rows of X"))
-    method === :combat || throw(ArgumentError("matrix correct_batch_effects supports :combat"))
+    method === :combat ||
+        throw(ArgumentError("matrix correct_batch_effects supports :combat"))
     batches = string.(batch)
     Y = Matrix{Float64}(X)
     corrected, transform = _combat_eb_matrix(Y, batches, design)
-    return (data = corrected, transform = transform, method = :combat, original_preserved = true)
+    return (
+        data = corrected,
+        transform = transform,
+        method = :combat,
+        original_preserved = true,
+    )
 end
 
 function _combat_eb_matrix(Y::Matrix{Float64}, batches::Vector{String}, design)
@@ -316,16 +328,20 @@ function _combat_eb_matrix(Y::Matrix{Float64}, batches::Vector{String}, design)
     length(uniq) < 2 && throw(ArgumentError("ComBat needs at least two batches"))
     X = ones(n, 1)
     if design !== nothing
-        D = design isa AbstractMatrix ? Float64.(design) : throw(ArgumentError("design must be a matrix"))
+        D =
+            design isa AbstractMatrix ? Float64.(design) :
+            throw(ArgumentError("design must be a matrix"))
         size(D, 1) == n || throw(ArgumentError("design rows must match observations"))
         X = hcat(X, D)
     end
     B = X \ Y
     resid = Y .- X * B
-    σ = [begin
-             s = std(resid[:, j])
-             s == 0 || !isfinite(s) ? 1.0 : s
-         end for j in 1:p]
+    σ = [
+        begin
+            s = std(resid[:, j])
+            s == 0 || !isfinite(s) ? 1.0 : s
+        end for j in 1:p
+    ]
     Z = resid ./ σ'
     γhat = Dict{String, Vector{Float64}}()
     δ2hat = Dict{String, Vector{Float64}}()
@@ -335,10 +351,12 @@ function _combat_eb_matrix(Y::Matrix{Float64}, batches::Vector{String}, design)
         nb[b] = length(idx)
         Zb = Z[idx, :]
         γhat[b] = vec(mean(Zb; dims = 1))
-        δ2hat[b] = [begin
-                        v = var(Zb[:, j])
-                        v <= 0 || !isfinite(v) ? 1.0 : v
-                    end for j in 1:p]
+        δ2hat[b] = [
+            begin
+                v = var(Zb[:, j])
+                v <= 0 || !isfinite(v) ? 1.0 : v
+            end for j in 1:p
+        ]
     end
     # Priors across features, per batch (classic ComBat)
     γstar = Dict{String, Vector{Float64}}()
@@ -380,7 +398,7 @@ function _combat_eb_matrix(Y::Matrix{Float64}, batches::Vector{String}, design)
     transform = Dict{String, NamedTuple}()
     for b in uniq
         transform[b] = (; gamma_star = γstar[b], delta2_star = δ2star[b],
-                        hyper = hyper[b], method = :combat, empirical_bayes = true)
+            hyper = hyper[b], method = :combat, empirical_bayes = true)
     end
     return Yadj, transform
 end
@@ -427,7 +445,7 @@ end
 
 function _row_named(r::Measurement)
     (; value = r.value, batch = r.batch, instrument = r.instrument,
-     reagent_lot = r.reagent_lot, timestamp = r.timestamp)
+        reagent_lot = r.reagent_lot, timestamp = r.timestamp)
 end
 
 function _row_named(r::NamedTuple)

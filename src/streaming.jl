@@ -153,7 +153,11 @@ Build an OnlineStats.jl `Series` for streaming assay values.
 Requires `using OnlineStats`.
 """
 function online_series(args...; kwargs...)
-    throw(ArgumentError("online_series requires OnlineStats.jl. Add OnlineStats and run `using OnlineStats`."))
+    throw(
+        ArgumentError(
+            "online_series requires OnlineStats.jl. Add OnlineStats and run `using OnlineStats`.",
+        ),
+    )
 end
 
 function result(d::IncrementalEWMA)

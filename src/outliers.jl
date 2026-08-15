@@ -12,8 +12,8 @@ Methods:
 - `:robust_z` — alias of `:mad`
 """
 function detect_outliers(x::AbstractVector;
-                         method::Symbol = :mad,
-                         k::Real = method === :iqr ? 1.5 : 3.5)
+    method::Symbol = :mad,
+    k::Real = method === :iqr ? 1.5 : 3.5)
     vals = Float64[]
     idxmap = Int[]
     for (i, v) in enumerate(x)
@@ -23,7 +23,7 @@ function detect_outliers(x::AbstractVector;
         end
     end
     isempty(vals) && return OutlierResult(Int[], Float64[], method, Float64(k), false,
-                                          "No finite observations.")
+        "No finite observations.")
     scores = similar(vals)
     flagged = Int[]
     if method === :iqr
@@ -48,7 +48,7 @@ function detect_outliers(x::AbstractVector;
         end
     end
     OutlierResult(flagged, scores, method, Float64(k), false,
-                  "Outliers annotated, not removed.")
+        "Outliers annotated, not removed.")
 end
 
 """
@@ -59,16 +59,17 @@ Alias of `detect_outliers`. Removal is never performed here.
 annotate_outliers(x; kwargs...) = detect_outliers(x; kwargs...)
 
 function apply_outlier_policy(values::AbstractVector{<:Real}, policy::Symbol;
-                              method::Symbol = :mad)
+    method::Symbol = :mad)
     result = detect_outliers(values; method)
     if policy === :remove
         keep = trues(length(values))
         for i in result.indices
             keep[i] = false
         end
-        return values[keep], OutlierResult(result.indices, result.scores, result.method,
-                                           result.threshold, true,
-                                           "Outliers removed by explicit policy.")
+        return values[keep],
+        OutlierResult(result.indices, result.scores, result.method,
+            result.threshold, true,
+            "Outliers removed by explicit policy.")
     end
     return values, result
 end

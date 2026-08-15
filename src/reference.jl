@@ -13,12 +13,12 @@ Methods:
 - `:lms` — Cole LMS (λ, μ, σ) 2.5th–97.5th quantiles
 """
 function reference_interval(values::AbstractVector;
-                            method::Symbol = :nonparametric,
-                            rng::AbstractRNG = Random.default_rng(),
-                            α::Float64 = 0.05,
-                            unit::AbstractString = "",
-                            bootstrap::Bool = true,
-                            nboot::Int = 400)
+    method::Symbol = :nonparametric,
+    rng::AbstractRNG = Random.default_rng(),
+    α::Float64 = 0.05,
+    unit::AbstractString = "",
+    bootstrap::Bool = true,
+    nboot::Int = 400)
     x = valid_values(values)
     n = length(x)
     n < 20 && throw(InsufficientDataError(20, n, "reference_interval"))
@@ -36,13 +36,19 @@ function reference_interval(values::AbstractVector;
         lo, hi = med - 1.96s, med + 1.96s
     elseif method === :transformed
         if any(<=(0), x)
-            throw(ArgumentError("transformed reference intervals require strictly positive values"))
+            throw(
+                ArgumentError(
+                    "transformed reference intervals require strictly positive values",
+                ),
+            )
         end
         lx = log.(x)
         μ, σ = mean(lx), std(lx)
         lo, hi = exp(μ - 1.96σ), exp(μ + 1.96σ)
     elseif method === :boxcox
-        any(<=(0), x) && throw(ArgumentError("Box–Cox reference intervals require strictly positive values"))
+        any(<=(0), x) && throw(
+            ArgumentError("Box–Cox reference intervals require strictly positive values"),
+        )
         λ = boxcox_lambda(x)
         y = boxcox.(x, λ)
         μ, σ = mean(y), std(y)
@@ -57,7 +63,8 @@ function reference_interval(values::AbstractVector;
         meta = (; n_removed = nout, n_kept = length(kept))
         notes *= " Horn robust filter removed $nout observation(s)."
     elseif method === :lms
-        any(<=(0), x) && throw(ArgumentError("LMS reference intervals require strictly positive values"))
+        any(<=(0), x) &&
+            throw(ArgumentError("LMS reference intervals require strictly positive values"))
         fit = lms_fit(x)
         lo = lms_quantile(fit.μ, fit.σ, fit.λ, -1.96)
         hi = lms_quantile(fit.μ, fit.σ, fit.λ, 1.96)
@@ -124,8 +131,8 @@ Harris–Boyd style statistical partitioning evidence (Harris & Boyd 1990).
 Does **not** recommend clinical partitions.
 """
 function assess_partitions(data;
-                           group,
-                           value = :value)
+    group,
+    value = :value)
     rows = _table_rows(data)
     labels = String[]
     vals = Float64[]
@@ -140,8 +147,8 @@ function assess_partitions(data;
     uniq = sort(unique(labels))
     length(uniq) < 2 &&
         return PartitionResult(uniq, 0.0, 1.0, :harris_boyd, false,
-                               "Fewer than two groups with finite values.",
-                               String[])
+            "Fewer than two groups with finite values.",
+            String[])
     gs = [vals[labels .== g] for g in uniq]
     if length(uniq) == 2
         z = _harris_boyd_z(gs[1], gs[2])
@@ -150,13 +157,21 @@ function assess_partitions(data;
         may = abs(z) > crit
         notes = "Harris–Boyd z=$(round(z; digits=3)) vs critical $(round(crit; digits=3)). \
                  This is statistical evidence only, not a partitioning recommendation."
-        return PartitionResult(uniq, z, 2 * normal_sf(abs(z)), :harris_boyd, may, notes, [notes])
+        return PartitionResult(
+            uniq,
+            z,
+            2 * normal_sf(abs(z)),
+            :harris_boyd,
+            may,
+            notes,
+            [notes],
+        )
     else
         kw = kruskal_wallis(gs)
         notes = "More than two groups: Kruskal–Wallis H=$(round(kw.statistic; digits=3)), p=$(round(kw.pvalue; digits=4)). \
                  Statistical evidence only."
         return PartitionResult(uniq, kw.statistic, kw.pvalue, :kruskal_wallis,
-                               kw.pvalue < 0.01, notes, [notes])
+            kw.pvalue < 0.01, notes, [notes])
     end
 end
 
@@ -183,9 +198,9 @@ quantiles. `:lms` uses Cole LMS (global λ, local μ and σ) and back-transforms
 the requested probabilities. Not a clinical reference system.
 """
 function reference_curve(covariate::AbstractVector, values::AbstractVector;
-                         quantiles = (0.025, 0.50, 0.975),
-                         span::Float64 = 0.3,
-                         method::Symbol = :quantile)
+    quantiles = (0.025, 0.50, 0.975),
+    span::Float64 = 0.3,
+    method::Symbol = :quantile)
     xs = Float64[]
     ys = Float64[]
     for (c, v) in zip(covariate, values)
@@ -235,16 +250,19 @@ function reference_curve(covariate::AbstractVector, values::AbstractVector;
             end
         end
     end
-    (; covariate = grid, quantiles = NamedTuple{Tuple(cols)}(Tuple(curves[c] for c in cols)),
-     n, span, method, lambda = λ,
-     notes = "Descriptive quantile curves. Not a clinical reference system.")
+    (; covariate = grid,
+        quantiles = NamedTuple{Tuple(cols)}(Tuple(curves[c] for c in cols)),
+        n, span, method, lambda = λ,
+        notes = "Descriptive quantile curves. Not a clinical reference system.")
 end
 
 # Beasley–Springer–Moro style inverse normal for p in (0,1)
 function _norm_quantile(p::Real)
     p = clamp(Float64(p), 1e-12, 1 - 1e-12)
     t = sqrt(-2 * log(p < 0.5 ? p : 1 - p))
-    z = t - (2.515517 + 0.802853 * t + 0.010328 * t^2) /
+    z =
+        t -
+        (2.515517 + 0.802853 * t + 0.010328 * t^2) /
         (1 + 1.432788 * t + 0.189269 * t^2 + 0.001308 * t^3)
     p < 0.5 ? -z : z
 end

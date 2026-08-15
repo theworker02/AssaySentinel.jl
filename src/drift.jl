@@ -9,10 +9,10 @@ Kinds: `:linear`, `:nonlinear`, `:sudden`, `:cyclic`, `:variance`,
 `:distribution`, `:calibration`, `:auto`.
 """
 function detect_drift(data::AbstractVector;
-                      kind::Symbol = :auto,
-                      timestamps = nothing,
-                      baseline = nothing,
-                      rng::AbstractRNG = Random.default_rng())
+    kind::Symbol = :auto,
+    timestamps = nothing,
+    baseline = nothing,
+    rng::AbstractRNG = Random.default_rng())
     ts, vals = if timestamps === nothing
         DateTime[], valid_values(data)
     else
@@ -20,7 +20,7 @@ function detect_drift(data::AbstractVector;
     end
     n = length(vals)
     n < 8 && return DriftResult(; detected = false, detector = kind, kind,
-                                evidence = ["Insufficient finite observations for drift analysis."])
+        evidence = ["Insufficient finite observations for drift analysis."])
 
     if kind === :auto
         results = [
@@ -33,7 +33,10 @@ function detect_drift(data::AbstractVector;
         n >= 20 && push!(results, _drift_nonlinear(vals, ts))
         best = results[argmax([r.probability for r in results])]
         ev = copy(best.evidence)
-        push!(ev, "Auto mode compared linear, sudden, variance, and distributional drift; selected :$(best.kind).")
+        push!(
+            ev,
+            "Auto mode compared linear, sudden, variance, and distributional drift; selected :$(best.kind).",
+        )
         return DriftResult(;
             detected = best.detected,
             probability = best.probability,
@@ -60,7 +63,9 @@ function detect_drift(data::AbstractVector;
         return _drift_distribution(vals, ts, baseline)
     elseif kind === :calibration
         return DriftResult(; detected = false, detector = :calibration, kind = :calibration,
-                           evidence = ["Calibration drift requires compare_calibrations on fitted curves."])
+            evidence = [
+                "Calibration drift requires compare_calibrations on fitted curves.",
+            ])
     else
         throw(ArgumentError("Unknown drift kind :$kind"))
     end
@@ -98,7 +103,9 @@ function _drift_linear(vals, ts)
         detector = :theil_sen,
         kind = :linear,
         evidence = detected ?
-                   ["Theil–Sen slope $(round(fit.slope; sigdigits=4)) per time unit (z=$(round(z; digits=2)))."] :
+                   [
+            "Theil–Sen slope $(round(fit.slope; sigdigits=4)) per time unit (z=$(round(z; digits=2))).",
+        ] :
                    String["No significant linear trend (Theil–Sen)."],
         details = (; slope = fit.slope, intercept = fit.intercept, z, p),
     )
@@ -116,7 +123,7 @@ function _drift_nonlinear(vals, ts)
         X \ vals
     catch
         return DriftResult(; detected = false, detector = :quadratic, kind = :nonlinear,
-                           evidence = ["Quadratic fit failed."])
+            evidence = ["Quadratic fit failed."])
     end
     r2 = sum(abs2, vals .- X * β)
     f = ((r1 - r2) / 1) / (r2 / max(n - 3, 1))
@@ -131,7 +138,9 @@ function _drift_nonlinear(vals, ts)
         detector = :quadratic,
         kind = :nonlinear,
         evidence = detected ?
-                   ["Quadratic term improved residual fit (F=$(round(f; digits=2))); nonlinear drift suspected."] :
+                   [
+            "Quadratic term improved residual fit (F=$(round(f; digits=2))); nonlinear drift suspected.",
+        ] :
                    String["Quadratic term did not meaningfully improve a linear fit."],
         details = (; f, beta = β),
     )
@@ -141,7 +150,7 @@ function _drift_sudden(vals, ts)
     cp = detect_changes(vals; method = :likelihood, timestamps = isempty(ts) ? nothing : ts)
     if !cp.detected || isempty(cp.indices)
         return DriftResult(; detected = false, detector = :likelihood, kind = :sudden,
-                           evidence = ["No sudden mean shift localized."])
+            evidence = ["No sudden mean shift localized."])
     end
     τ = cp.indices[1]
     left = vals[1:τ]
@@ -168,8 +177,9 @@ function _drift_variance(vals, ts)
     e2 = abs2.(vals .- mean(vals))
     C = cumsum(e2)
     total = C[end]
-    total <= 0 && return DriftResult(; detected = false, detector = :icss, kind = :variance,
-                                     evidence = ["Zero residual energy."])
+    total <= 0 &&
+        return DriftResult(; detected = false, detector = :icss, kind = :variance,
+            evidence = ["Zero residual energy."])
     D = [C[k] / total - k / n for k in 1:n]
     τ = argmax(abs.(D))
     stat = sqrt(n / 2) * maximum(abs.(D))
@@ -188,7 +198,9 @@ function _drift_variance(vals, ts)
         detector = :icss,
         kind = :variance,
         evidence = detected ?
-                   ["Inclán–Tiao CUSUM of squares exceeded the Brownian-bridge 5% critical value at observation $τ."] :
+                   [
+            "Inclán–Tiao CUSUM of squares exceeded the Brownian-bridge 5% critical value at observation $τ.",
+        ] :
                    String["No variance change by Inclán–Tiao ICSS."],
         details = (; statistic = stat, sd_before = left, sd_after = right),
     )
@@ -228,7 +240,9 @@ function _drift_cyclic(vals, ts)
         detector = :periodogram,
         kind = :cyclic,
         evidence = detected ?
-                   ["Periodogram peak at harmonic $best_k (Fisher-like g=$(round(g; digits=3)))."] :
+                   [
+            "Periodogram peak at harmonic $best_k (Fisher-like g=$(round(g; digits=3))).",
+        ] :
                    String["No dominant cyclic component."],
         details = (; harmonic = best_k, g),
     )
@@ -251,7 +265,7 @@ function _drift_distribution(vals, ts, baseline)
     end
     (length(ref) < 8 || length(cur) < 8) &&
         return DriftResult(; detected = false, detector = :ks, kind = :distribution,
-                           evidence = ["Not enough observations to compare distributions."])
+            evidence = ["Not enough observations to compare distributions."])
     d = ks_statistic(ref, cur)
     p = ks_pvalue(d, length(ref), length(cur))
     detected = p < 0.01
@@ -265,7 +279,9 @@ function _drift_distribution(vals, ts, baseline)
         detector = :ks,
         kind = :distribution,
         evidence = detected ?
-                   ["Two-sample KS D=$(round(d; digits=3)), asymptotic p=$(round(p; digits=4))."] :
+                   [
+            "Two-sample KS D=$(round(d; digits=3)), asymptotic p=$(round(p; digits=4)).",
+        ] :
                    String["Current window is consistent with the baseline distribution (KS)."],
         details = (; D = d, p),
     )

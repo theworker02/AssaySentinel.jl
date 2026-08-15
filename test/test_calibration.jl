@@ -30,7 +30,7 @@
     mid = AssaySentinel.predict_response(cs, 1.5)
     linear_mid = 1.0 + 0.5 * (8.0 - 1.0)
     @test abs(mid - 1.5^3) < abs(linear_mid - 1.5^3)
-    @test     mid ≉ linear_mid atol = 0.05
+    @test mid ≉ linear_mid atol = 0.05
 
     diag = calibration_diagnostics(c)
     @test diag.r_squared ≈ 1 atol = 1e-10

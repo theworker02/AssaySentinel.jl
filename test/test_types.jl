@@ -1,6 +1,6 @@
 @testset "types and streams" begin
     m = Measurement(value = 101.2, timestamp = DateTime(2026, 8, 4, 14, 32),
-                    batch = "B104", lot = "R22", control = true, unit = "mg/dL")
+        batch = "B104", lot = "R22", control = true, unit = "mg/dL")
     @test m.value == 101.2
     @test m.reagent_lot == "R22"
     @test m.control

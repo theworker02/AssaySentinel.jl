@@ -6,16 +6,17 @@ function _capture_rng(rng::AbstractRNG)
 end
 
 function _beat_label(kind::Symbol, extra::AbstractString = "")
-    base = kind === :stable ? "Stable" :
-           kind === :calibration ? "Calibration" :
-           kind === :lot_change ? "Reagent lot changed" :
-           kind === :shift ? "Small distribution shift" :
-           kind === :drift ? "Progressive analytical drift" :
-           kind === :variance ? "Variance increase" :
-           kind === :qc ? "QC deterioration" :
-           kind === :changepoint ? "Detected change point" :
-           kind === :instrument ? "Instrument difference" :
-           string(kind)
+    base =
+        kind === :stable ? "Stable" :
+        kind === :calibration ? "Calibration" :
+        kind === :lot_change ? "Reagent lot changed" :
+        kind === :shift ? "Small distribution shift" :
+        kind === :drift ? "Progressive analytical drift" :
+        kind === :variance ? "Variance increase" :
+        kind === :qc ? "QC deterioration" :
+        kind === :changepoint ? "Detected change point" :
+        kind === :instrument ? "Instrument difference" :
+        string(kind)
     isempty(extra) ? base : base * extra
 end
 
@@ -50,7 +51,7 @@ function _segment_values(vals, ts, lo::DateTime, hi::DateTime)
 end
 
 function _classify_segment(prev::Vector{Float64}, cur::Vector{Float64};
-                           qc_hit::Bool, drift_hint::Bool, var_hint::Bool)
+    qc_hit::Bool, drift_hint::Bool, var_hint::Bool)
     qc_hit && return (:qc, :observed, "Control-rule failures occurred in this window.")
     if length(cur) >= 16 && drift_hint
         d = detect_drift(cur; kind = :linear)
@@ -66,7 +67,8 @@ function _classify_segment(prev::Vector{Float64}, cur::Vector{Float64};
         s = std(prev)
         if wt.pvalue < 0.01 && abs(δ) > 0.35 * max(s, eps())
             return (:shift, :statistical,
-                    "Location changed vs the previous segment (Welch p=$(round(wt.pvalue; digits=4))).")
+                "Location changed vs the previous segment (Welch p=$(round(wt.pvalue; digits=4))).",
+            )
         end
     end
     if length(cur) >= 20
@@ -91,15 +93,15 @@ Build the ordered analytical story, uncertainty budget, charts, and
 provenance graph from an already-run analysis. Called by `analyze`.
 """
 function reconstruct(stream::AssayStream,
-                     ms::AbstractVector{<:Measurement},
-                     vals::Vector{Float64},
-                     ts::Vector{DateTime},
-                     drift::DriftResult,
-                     cp::ChangePointResult,
-                     vard::DriftResult,
-                     qc::Vector{QCRuleResult},
-                     provenance::Vector{ProvenanceRecord};
-                     rng_seed = nothing)
+    ms::AbstractVector{<:Measurement},
+    vals::Vector{Float64},
+    ts::Vector{DateTime},
+    drift::DriftResult,
+    cp::ChangePointResult,
+    vard::DriftResult,
+    qc::Vector{QCRuleResult},
+    provenance::Vector{ProvenanceRecord};
+    rng_seed = nothing)
     events = copy(stream.events.events)
     bounds = Tuple{DateTime, Symbol, Any}[]
     if !isempty(ts)
@@ -124,7 +126,8 @@ function reconstruct(stream::AssayStream,
     for b in bounds
         if isempty(merged) || merged[end][1] != b[1]
             push!(merged, b)
-        elseif b[2] in (:lot_change, :calibration, :qc) && merged[end][2] in (:start, :changepoint, :end)
+        elseif b[2] in (:lot_change, :calibration, :qc) &&
+               merged[end][2] in (:start, :changepoint, :end)
             merged[end] = b
         end
     end
@@ -148,36 +151,55 @@ function reconstruct(stream::AssayStream,
         t0, k0, e0 = merged[i]
         t1 = merged[i + 1][1]
         if k0 in (:lot_change, :calibration) && e0 !== nothing
-            extra = k0 === :lot_change && e0 isa LotChangeEvent ?
-                    (e0.from_lot === nothing ? " ($(e0.to_lot))" : " ($(e0.from_lot) → $(e0.to_lot))") : ""
-            push!(beats, StoryBeat(_beat_label(k0, extra), k0, t0, _index_at(ts, t0),
-                                   :observed, event_label(e0)))
+            extra =
+                k0 === :lot_change && e0 isa LotChangeEvent ?
+                (
+                    e0.from_lot === nothing ? " ($(e0.to_lot))" :
+                    " ($(e0.from_lot) → $(e0.to_lot))"
+                ) : ""
+            push!(
+                beats,
+                StoryBeat(_beat_label(k0, extra), k0, t0, _index_at(ts, t0),
+                    :observed, event_label(e0)),
+            )
         elseif k0 === :changepoint
-            push!(beats, StoryBeat(_beat_label(:changepoint), :changepoint, t0,
-                                   _index_at(ts, t0), :algorithmic, cp.selection_reason))
+            push!(
+                beats,
+                StoryBeat(_beat_label(:changepoint), :changepoint, t0,
+                    _index_at(ts, t0), :algorithmic, cp.selection_reason),
+            )
         end
         cur = _segment_values(vals, ts, t0, t1)
         qc_hit = any(t -> t0 <= t <= t1, qc_times)
         kind, sk, notes = _classify_segment(prev_vals, cur;
-                                            qc_hit,
-                                            drift_hint = drift.detected && drift.start_time !== nothing && t0 >= drift.start_time,
-                                            var_hint = vard.detected && vard.start_time !== nothing && t0 >= vard.start_time)
+            qc_hit,
+            drift_hint = drift.detected && drift.start_time !== nothing &&
+                         t0 >= drift.start_time,
+            var_hint = vard.detected && vard.start_time !== nothing &&
+                       t0 >= vard.start_time)
         # Avoid repeating an event label as the segment label
         if kind !== k0 || k0 === :start
-            push!(beats, StoryBeat(_beat_label(kind), kind, t0, _index_at(ts, t0), sk, notes))
+            push!(
+                beats,
+                StoryBeat(_beat_label(kind), kind, t0, _index_at(ts, t0), sk, notes),
+            )
         end
         !isempty(cur) && (prev_vals = cur)
     end
     # collapse consecutive identical kinds
     compact = StoryBeat[]
     for b in beats
-        if !isempty(compact) && compact[end].kind === b.kind && compact[end].kind === :stable
+        if !isempty(compact) && compact[end].kind === b.kind &&
+           compact[end].kind === :stable
             continue
         end
         push!(compact, b)
     end
-    isempty(compact) && push!(compact, StoryBeat("Stable", :stable, isempty(ts) ? nothing : ts[1],
-                                                 1, :statistical, "No transitions localized."))
+    isempty(compact) && push!(
+        compact,
+        StoryBeat("Stable", :stable, isempty(ts) ? nothing : ts[1],
+            1, :statistical, "No transitions localized."),
+    )
 
     lot = try
         compare_lots(ms, :reagent_lot)
@@ -213,8 +235,12 @@ function reconstruct(stream::AssayStream,
             push!(inst_vals, Float64(m.value))
         end
     end
-    lot_svg = length(unique(lot_labs)) >= 2 ? svg_group_chart(lot_labs, lot_vals; title = "Reagent lots") : ""
-    inst_svg = length(unique(inst_labs)) >= 2 ? svg_group_chart(inst_labs, inst_vals; title = "Instruments") : ""
+    lot_svg =
+        length(unique(lot_labs)) >= 2 ?
+        svg_group_chart(lot_labs, lot_vals; title = "Reagent lots") : ""
+    inst_svg =
+        length(unique(inst_labs)) >= 2 ?
+        svg_group_chart(inst_labs, inst_vals; title = "Instruments") : ""
     charts = (
         timeline = svg_timeline(compact),
         control_chart = svg_control_chart(ts, vals; spec, events, changepoints = cps),
@@ -232,7 +258,7 @@ function reconstruct(stream::AssayStream,
         inst,
         charts,
         (; nodes = [(string(n[1]), string(n[2]), string(n[3])) for n in g.nodes],
-         edges = [(string(a), string(b)) for (a, b) in g.edges]),
+            edges = [(string(a), string(b)) for (a, b) in g.edges]),
         rng_seed === nothing ? nothing : UInt64(rng_seed),
         fingerprint(vals),
         string(PACKAGE_VERSION),
@@ -244,6 +270,10 @@ end
 
 Analyze a stream and return only the `Reconstruction`.
 """
-function reconstruct(stream::AssayStream; rng::AbstractRNG = Random.default_rng(), kwargs...)
+function reconstruct(
+    stream::AssayStream;
+    rng::AbstractRNG = Random.default_rng(),
+    kwargs...,
+)
     analyze(stream; rng, kwargs...).reconstruction
 end

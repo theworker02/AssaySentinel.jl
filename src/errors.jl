@@ -44,5 +44,5 @@ end
 
 function Base.showerror(io::IO, e::InsufficientDataError)
     print(io, "InsufficientDataError: ", e.context,
-          " (need ≥ ", e.needed, ", got ", e.got, ")")
+        " (need ≥ ", e.needed, ", got ", e.got, ")")
 end

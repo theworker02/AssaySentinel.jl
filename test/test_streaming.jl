@@ -1,7 +1,8 @@
 @testset "streaming sentinel" begin
     rng = Random.Xoshiro(13)
     base = Baseline(100 .+ 0.8 .* randn(rng, 80); unit = "mg/dL")
-    sent = Sentinel(base; detector = IncrementalCUSUM(; persistence = 2), cooldown = Hour(1))
+    sent =
+        Sentinel(base; detector = IncrementalCUSUM(; persistence = 2), cooldown = Hour(1))
     alerts = Alert[]
     onalert(sent) do a
         push!(alerts, a)

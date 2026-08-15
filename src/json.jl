@@ -61,7 +61,8 @@ function _json(io::IO, x::AbstractString)
 end
 
 _json(io::IO, x::Symbol) = _json(io, string(x))
-_json(io::IO, x::NamedTuple) = _json(io, Dict{String, Any}(string(k) => getfield(x, k) for k in keys(x)))
+_json(io::IO, x::NamedTuple) =
+    _json(io, Dict{String, Any}(string(k) => getfield(x, k) for k in keys(x)))
 _json(io::IO, x::Tuple) = _json(io, collect(x))
 _json(io::IO, x) = _json(io, string(x))
 
@@ -207,7 +208,7 @@ function _parse_string!(p::_JSONParser)
                 print(io, '\f')
             elseif e == 'u'
                 p.i + 3 > lastindex(s) && error("json_parse: truncated \\u escape")
-                hex = s[p.i:p.i + 3]
+                hex = s[p.i:(p.i + 3)]
                 p.i = nextind(s, p.i + 3)
                 print(io, Char(parse(UInt32, hex; base = 16)))
             else

@@ -45,18 +45,25 @@ function convert_unit(value::Real, from, to; molar_mass = nothing, factor = noth
     factor !== nothing && return Float64(value) * Float64(factor)
     if src == "mg/dL" && dst == "mmol/L"
         molar_mass === nothing &&
-            throw(ArgumentError("convert_unit(mg/dL → mmol/L) requires molar_mass in g/mol"))
+            throw(
+                ArgumentError("convert_unit(mg/dL → mmol/L) requires molar_mass in g/mol"),
+            )
         return Float64(value) * 10 / Float64(molar_mass)
     elseif src == "mmol/L" && dst == "mg/dL"
         molar_mass === nothing &&
-            throw(ArgumentError("convert_unit(mmol/L → mg/dL) requires molar_mass in g/mol"))
+            throw(
+                ArgumentError("convert_unit(mmol/L → mg/dL) requires molar_mass in g/mol"),
+            )
         return Float64(value) * Float64(molar_mass) / 10
     elseif src == "g/L" && dst == "mg/dL"
         return Float64(value) * 100
     elseif src == "mg/dL" && dst == "g/L"
         return Float64(value) / 100
     else
-        throw(UnitMismatchError(src, dst,
-            "No built-in conversion from $src to $dst. Pass factor= or convert with Unitful."))
+        throw(
+            UnitMismatchError(src, dst,
+                "No built-in conversion from $src to $dst. Pass factor= or convert with Unitful.",
+            ),
+        )
     end
 end

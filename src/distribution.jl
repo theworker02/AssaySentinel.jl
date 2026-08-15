@@ -1,11 +1,11 @@
 # Distribution surveillance against an explicit baseline.
 
 function Baseline(values::AbstractVector;
-                  timestamps = nothing,
-                  instrument = nothing,
-                  reagent_lot = nothing,
-                  method = nothing,
-                  unit::AbstractString = "")
+    timestamps = nothing,
+    instrument = nothing,
+    reagent_lot = nothing,
+    method = nothing,
+    unit::AbstractString = "")
     ts, vals = if timestamps === nothing
         DateTime[], valid_values(values)
     else
@@ -33,11 +33,11 @@ end
 
 function Baseline(stream::AssayStream; kwargs...)
     Baseline([m.value for m in stream.measurements];
-             timestamps = [m.timestamp for m in stream.measurements],
-             instrument = stream.instrument,
-             method = stream.method,
-             unit = stream.unit,
-             kwargs...)
+        timestamps = [m.timestamp for m in stream.measurements],
+        instrument = stream.instrument,
+        method = stream.method,
+        unit = stream.unit,
+        kwargs...)
 end
 
 """
@@ -67,20 +67,22 @@ function compare_distribution(baseline, current; method::Symbol = :auto)
         d = ks_statistic(a, b)
         p = ks_pvalue(d, length(a), length(b))
         return DistributionComparison(d, p, :ks, reason, length(a), length(b),
-                                      ["KS D=$(round(d; digits=3)), p=$(round(p; digits=4))."],
-                                      (;))
+            ["KS D=$(round(d; digits=3)), p=$(round(p; digits=4))."],
+            (;))
     elseif chosen === :energy
         d = energy_distance(a, b)
         return DistributionComparison(d, nothing, :energy, reason, length(a), length(b),
-                                      ["Energy distance $(round(d; digits=4))."], (;))
+            ["Energy distance $(round(d; digits=4))."], (;))
     elseif chosen === :wasserstein
         d = wasserstein1d(a, b)
-        return DistributionComparison(d, nothing, :wasserstein, reason, length(a), length(b),
-                                      ["1-Wasserstein distance $(round(d; digits=4))."], (;))
+        return DistributionComparison(d, nothing, :wasserstein, reason, length(a),
+            length(b),
+            ["1-Wasserstein distance $(round(d; digits=4))."], (;))
     elseif chosen === :js || chosen === :jensen_shannon
         d = jensen_shannon(a, b)
-        return DistributionComparison(d, nothing, :jensen_shannon, reason, length(a), length(b),
-                                      ["Jensen–Shannon divergence $(round(d; digits=4))."], (;))
+        return DistributionComparison(d, nothing, :jensen_shannon, reason, length(a),
+            length(b),
+            ["Jensen–Shannon divergence $(round(d; digits=4))."], (;))
     else
         throw(ArgumentError("Unknown distribution method :$chosen"))
     end

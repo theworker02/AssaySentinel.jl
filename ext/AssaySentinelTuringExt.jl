@@ -65,16 +65,16 @@ function _mh(model, samples, rng)
 end
 
 function AssaySentinel._cp_turing(x::Vector{Float64};
-                                  rng::AbstractRNG = Random.default_rng(),
-                                  sites = nothing,
-                                  model::Symbol = :single,
-                                  samples::Int = 400,
-                                  kwargs...)
+    rng::AbstractRNG = Random.default_rng(),
+    sites = nothing,
+    model::Symbol = :single,
+    samples::Int = 400,
+    kwargs...)
     n = length(x)
     n < 8 && return (detected = false, indices = Int[], statistic = 0.0,
-                     confidence = 0.0,
-                     evidence = String["Too few observations for Turing changepoint."],
-                     details = (;))
+        confidence = 0.0,
+        evidence = String["Too few observations for Turing changepoint."],
+        details = (;))
     μ0 = mean(x)
     σ0 = std(x)
     σ0 = σ0 > 0 && isfinite(σ0) ? σ0 : 1.0
@@ -91,12 +91,14 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
         mode2 = _mode_int(right, n)
         indices = unique(filter(i -> 1 < i < n, [mode1, mode2]))
         conf = max(_mass_at(left, mode1), _mass_at(right, mode2))
-        ev = ["Turing two-cut MH modes at $(join(indices, ", ")) (P=$(round(conf; digits=3)))."]
+        ev = [
+            "Turing two-cut MH modes at $(join(indices, ", ")) (P=$(round(conf; digits=3))).",
+        ]
         return (detected = !isempty(indices) && conf >= 0.06, indices,
-                statistic = conf, confidence = conf, evidence = ev,
-                details = (; model = :multiple, samples, sampler = :mh,
-                             interval_90_first = _q90(left),
-                             interval_90_second = _q90(right)))
+            statistic = conf, confidence = conf, evidence = ev,
+            details = (; model = :multiple, samples, sampler = :mh,
+                interval_90_first = _q90(left),
+                interval_90_second = _q90(right)))
     end
     chn = _mh(_assay_changepoint(x, μ0, σ0), samples, rng)
     τs = Int.(vec(Array(chn[:τ])))
@@ -109,7 +111,9 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
     conf = post[mode]
     qs = _q90(τs)
     detected = conf >= 0.08
-    ev = ["Turing MH posterior mode at $mode (P=$(round(conf; digits=3)); 90% interval $(qs[1])–$(qs[3]))."]
+    ev = [
+        "Turing MH posterior mode at $mode (P=$(round(conf; digits=3)); 90% interval $(qs[1])–$(qs[3])).",
+    ]
     (
         detected = detected,
         indices = detected ? [mode] : Int[],
@@ -117,12 +121,12 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
         confidence = conf,
         evidence = ev,
         details = (; posterior_mode = mode, posterior_mass = conf,
-                     interval_90 = qs, samples, sampler = :mh, model = :single),
+            interval_90 = qs, samples, sampler = :mh, model = :single),
     )
 end
 
 function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
-                                                   samples::Int = 400)
+    samples::Int = 400)
     μ0 = mean(vals)
     σ0 = std(vals)
     σ0 = σ0 > 0 && isfinite(σ0) ? σ0 : 1.0
@@ -142,7 +146,9 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
         start_index = mode,
         detector = :turing,
         kind = :hierarchical,
-        evidence = ["Turing hierarchical site model: shared cut mode $mode, E[δ]=$(round(mean(δs); digits=3))."],
+        evidence = [
+            "Turing hierarchical site model: shared cut mode $mode, E[δ]=$(round(mean(δs); digits=3)).",
+        ],
         details = (; interval_90 = _q90(cuts), tau = mean(τs), samples),
     )
     # Reuse EB location shrinkage for site table; attach global Turing drift
@@ -153,7 +159,11 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
         global_d.detected ? :global : eb.attribution, eb.concordance,
         vcat(global_d.evidence, eb.evidence),
         eb.notes,
-        (; method = :turing, samples, schema_version = string(AssaySentinel.SCHEMA_VERSION)),
+        (;
+            method = :turing,
+            samples,
+            schema_version = string(AssaySentinel.SCHEMA_VERSION),
+        ),
     )
 end
 
@@ -164,10 +174,13 @@ function _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng)
     cuts = Int.(vec(Array(chn[:cut])))
     mode = _mode_int(cuts, length(x))
     conf = _mass_at(cuts, mode)
-    ev = ["Turing hierarchical-site MH cut mode at $mode (P=$(round(conf; digits=3)); k=$(length(uniq)) sites)."]
+    ev = [
+        "Turing hierarchical-site MH cut mode at $mode (P=$(round(conf; digits=3)); k=$(length(uniq)) sites).",
+    ]
     (detected = conf >= 0.08, indices = [mode], statistic = conf, confidence = conf,
-     evidence = ev, details = (; model = :hierarchical, samples, n_sites = length(uniq),
-                                 interval_90 = _q90(cuts)))
+        evidence = ev,
+        details = (; model = :hierarchical, samples, n_sites = length(uniq),
+            interval_90 = _q90(cuts)))
 end
 
 _mode_int(xs, n) = begin

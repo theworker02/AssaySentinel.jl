@@ -7,7 +7,9 @@
     @test occursin("↓", rec.narrative)
     @test occursin("Stable", rec.narrative)
     kinds = Set(b.kind for b in rec.beats)
-    @test !isempty(intersect(kinds, Set((:lot_change, :calibration, :drift, :shift, :variance, :qc))))
+    @test !isempty(
+        intersect(kinds, Set((:lot_change, :calibration, :drift, :shift, :variance, :qc))),
+    )
     @test rec.uncertainty.n_with_uncertainty == length(data.stream)
     @test rec.uncertainty.rms_measurement !== nothing
     @test rec.uncertainty.rms_measurement ≈ 0.4 atol = 1e-12
@@ -61,7 +63,8 @@
         @test loaded["reconstruction"]["narrative"] == rec.narrative
         @test loaded["reconstruction"]["input_fingerprint"] == rec.input_fingerprint
         @test string(loaded["reconstruction"]["rng_seed"]) == string(rec.rng_seed)
-        @test loaded["reconstruction"]["uncertainty"]["n_with_uncertainty"] == rec.uncertainty.n_with_uncertainty
+        @test loaded["reconstruction"]["uncertainty"]["n_with_uncertainty"] ==
+              rec.uncertainty.n_with_uncertainty
         lex = explain(loaded)
         @test occursin("↓", lex)
         @test occursin("Uncertainty budget", lex)
@@ -73,11 +76,15 @@
         @test roundtrip.reconstruction.input_fingerprint == rec.input_fingerprint
     end
 
-    parsed = AssaySentinel.json_parse(AssaySentinel.json_string(Dict(
-        "a" => Any[1, 2.5, true, nothing],
-        "b" => "line\nnext",
-        "c" => Dict("k" => "v"),
-    )))
+    parsed = AssaySentinel.json_parse(
+        AssaySentinel.json_string(
+            Dict(
+                "a" => Any[1, 2.5, true, nothing],
+                "b" => "line\nnext",
+                "c" => Dict("k" => "v"),
+            ),
+        ),
+    )
     @test parsed["a"][1] == 1
     @test parsed["a"][2] == 2.5
     @test parsed["a"][3] === true

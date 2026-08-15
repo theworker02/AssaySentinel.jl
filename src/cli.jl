@@ -50,7 +50,9 @@ function _cli_doctor()
     println("Julia ", VERSION)
     println("threads ", Threads.nthreads())
     println("safety ", strip(SAFETY_NOTICE))
-    println("optional Makie / Unitful / Measurements / Turing / OnlineStats: weak dependencies (load to enable extensions)")
+    println(
+        "optional Makie / Unitful / Measurements / Turing / OnlineStats: weak dependencies (load to enable extensions)",
+    )
     0
 end
 
@@ -78,38 +80,57 @@ function _cli_file(cmd, path, rest, json_out)
     if cmd == "reference"
         col = _first_numeric(table)
         ri = reference_interval(col; rng = Random.Xoshiro(1))
-        json_out ? print(stdout, json_string(Dict("lower" => ri.lower, "upper" => ri.upper,
-                                           "method" => string(ri.method), "n" => ri.n))) :
-                   println("RI ", ri.lower, " – ", ri.upper, " (", ri.method, ", n=", ri.n, ")")
+        json_out ?
+        print(
+            stdout,
+            json_string(
+                Dict("lower" => ri.lower, "upper" => ri.upper,
+                    "method" => string(ri.method), "n" => ri.n),
+            ),
+        ) :
+        println("RI ", ri.lower, " – ", ri.upper, " (", ri.method, ", n=", ri.n, ")")
         println()
         return 0
     elseif cmd == "batch"
         be = detect_batch_effects(table; batch = :batch, value = _value_col(table))
-        json_out ? print(stdout, json_string(Dict("detected" => be.detected, "p" => be.batch_pvalue,
-                                           "interpretation" => be.interpretation))) :
-                   println(be.interpretation)
+        json_out ?
+        print(
+            stdout,
+            json_string(
+                Dict("detected" => be.detected, "p" => be.batch_pvalue,
+                    "interpretation" => be.interpretation),
+            ),
+        ) :
+        println(be.interpretation)
         println()
         return 0
     elseif cmd == "compare"
         lotcol = hasproperty(first(table), :lot) ? :lot : :reagent_lot
         cmp = compare_lots(table, lotcol; value = _value_col(table))
-        json_out ? print(stdout, json_string(Dict("lots" => cmp.lots, "evidence" => cmp.evidence))) :
-                   foreach(println, cmp.evidence)
+        json_out ?
+        print(stdout, json_string(Dict("lots" => cmp.lots, "evidence" => cmp.evidence))) :
+        foreach(println, cmp.evidence)
         println()
         return 0
     end
     stream = from_table(table; analyte = :analyte, unit = "",
-                        value = _value_col(table),
-                        time = _time_col(table),
-                        lot = _optional_col(table, (:reagent_lot, :lot)),
-                        instrument = _optional_col(table, (:instrument,)),
-                        batch = _optional_col(table, (:batch,)),
-                        control = _optional_col(table, (:control,)))
+        value = _value_col(table),
+        time = _time_col(table),
+        lot = _optional_col(table, (:reagent_lot, :lot)),
+        instrument = _optional_col(table, (:instrument,)),
+        batch = _optional_col(table, (:batch,)),
+        control = _optional_col(table, (:control,)))
     if cmd == "drift"
         r = detect_drift([m.value for m in stream.measurements];
-                         timestamps = [m.timestamp for m in stream.measurements])
-        json_out ? print(stdout, json_string(Dict("detected" => r.detected, "kind" => string(r.kind),
-                                           "probability" => r.probability))) : println(explain(r))
+            timestamps = [m.timestamp for m in stream.measurements])
+        json_out ?
+        print(
+            stdout,
+            json_string(
+                Dict("detected" => r.detected, "kind" => string(r.kind),
+                    "probability" => r.probability),
+            ),
+        ) : println(explain(r))
         println()
         return 0
     end
@@ -140,7 +161,8 @@ function _read_csv(path::AbstractString)
             isempty(strip(line)) && continue
             parts = split(line, ',')
             vals = Any[_parse_cell(p) for p in parts]
-            length(vals) < length(names) && append!(vals, fill(nothing, length(names) - length(vals)))
+            length(vals) < length(names) &&
+                append!(vals, fill(nothing, length(names) - length(vals)))
             push!(rows, NamedTuple{names}(Tuple(vals[1:length(names)])))
         end
     end

@@ -13,7 +13,7 @@ Methods:
 - `:robust` — Theil–Sen
 """
 function compare_methods(a::AbstractVector, b::AbstractVector;
-                         method::Symbol = :ba)
+    method::Symbol = :ba)
     x, y = _xy_finite(a, b)
     n = length(x)
     n < 8 && throw(InsufficientDataError(8, n, "compare_methods"))
@@ -43,9 +43,11 @@ function _bland_altman(x, y)
     # Proportional bias: slope of diff ~ average
     fit = theil_sen(avg, diff)
     ComparisonResult(:agreement, bias, fit.slope, loa_l, loa_u, 1.0, bias, length(x),
-                     :bland_altman,
-                     ["Bland–Altman bias $(round(bias; digits=4)); 95% LoA [$(round(loa_l; digits=4)), $(round(loa_u; digits=4))]."],
-                     (; sd_diff = s, proportional_slope = fit.slope))
+        :bland_altman,
+        [
+            "Bland–Altman bias $(round(bias; digits=4)); 95% LoA [$(round(loa_l; digits=4)), $(round(loa_u; digits=4))].",
+        ],
+        (; sd_diff = s, proportional_slope = fit.slope))
 end
 
 function _deming(x, y; λ::Float64 = 1.0)
@@ -59,9 +61,11 @@ function _deming(x, y; λ::Float64 = 1.0)
     isfinite(slope) || (slope = 1.0)
     intercept = my - slope * mx
     ComparisonResult(:regression, intercept, slope - 1, NaN, NaN, slope, intercept, n,
-                     :deming,
-                     ["Deming slope $(round(slope; digits=4)), intercept $(round(intercept; digits=4))."],
-                     (; λ))
+        :deming,
+        [
+            "Deming slope $(round(slope; digits=4)), intercept $(round(intercept; digits=4)).",
+        ],
+        (; λ))
 end
 
 function _passing_bablok(x, y; α::Float64 = 0.05)
@@ -75,8 +79,9 @@ function _passing_bablok(x, y; α::Float64 = 0.05)
             push!(slopes, dy / dx)
         end
     end
-    isempty(slopes) && return ComparisonResult(:regression, 0.0, 0.0, NaN, NaN, 1.0, 0.0, n,
-                                               :passing_bablok, ["Degenerate paired data."], EmptyMeta)
+    isempty(slopes) &&
+        return ComparisonResult(:regression, 0.0, 0.0, NaN, NaN, 1.0, 0.0, n,
+            :passing_bablok, ["Degenerate paired data."], EmptyMeta)
     sort!(slopes)
     N = length(slopes)
     K = count(<(-1), slopes)
@@ -97,23 +102,25 @@ function _passing_bablok(x, y; α::Float64 = 0.05)
         intercept_ci = (intercept_ci[2], intercept_ci[1])
     end
     ComparisonResult(:regression, intercept, slope - 1, NaN, NaN, slope, intercept, n,
-                     :passing_bablok,
-                     ["Passing–Bablok slope $(round(slope; digits=4)) (95% CI $(round(slope_ci[1]; digits=4))–$(round(slope_ci[2]; digits=4))), intercept $(round(intercept; digits=4))."],
-                     (; K, slope_ci, intercept_ci, α))
+        :passing_bablok,
+        [
+            "Passing–Bablok slope $(round(slope; digits=4)) (95% CI $(round(slope_ci[1]; digits=4))–$(round(slope_ci[2]; digits=4))), intercept $(round(intercept; digits=4)).",
+        ],
+        (; K, slope_ci, intercept_ci, α))
 end
 
 function _ols_compare(x, y)
     X = hcat(ones(length(x)), x)
     β = X \ y
     ComparisonResult(:regression, β[1], β[2] - 1, NaN, NaN, β[2], β[1], length(x),
-                     :ols, ["OLS slope $(round(β[2]; digits=4))."], EmptyMeta)
+        :ols, ["OLS slope $(round(β[2]; digits=4))."], EmptyMeta)
 end
 
 function _robust_compare(x, y)
     fit = theil_sen(x, y)
     ComparisonResult(:regression, fit.intercept, fit.slope - 1, NaN, NaN,
-                     fit.slope, fit.intercept, length(x), :theil_sen,
-                     ["Theil–Sen slope $(round(fit.slope; digits=4))."], EmptyMeta)
+        fit.slope, fit.intercept, length(x), :theil_sen,
+        ["Theil–Sen slope $(round(fit.slope; digits=4))."], EmptyMeta)
 end
 
 """
@@ -183,7 +190,9 @@ function compare_sites(data; site = :site, value = :value)
     (
         sites = uniq,
         location = loc,
-        evidence = ["Site location H=$(round(loc.statistic; digits=3)), p=$(round(loc.pvalue; digits=4))."],
+        evidence = [
+            "Site location H=$(round(loc.statistic; digits=3)), p=$(round(loc.pvalue; digits=4)).",
+        ],
         site_effect_suspected = loc.pvalue < 0.05,
         notes = "Site differences may reflect instruments, lots, or populations. Association is not causation.",
     )

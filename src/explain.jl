@@ -15,7 +15,12 @@ function explain(r::QualityReport)
     println(io)
     println(io, "Analyte: ", r.analyte, "  (", r.unit, ")")
     println(io, "Status:  ", _status_label(r.status))
-    println(io, "Score:   ", round(r.score.value; digits = 1), " / 100  (analytical stability, not patient risk)")
+    println(
+        io,
+        "Score:   ",
+        round(r.score.value; digits = 1),
+        " / 100  (analytical stability, not patient risk)",
+    )
     if r.reconstruction !== nothing
         rec = r.reconstruction
         println(io)
@@ -48,9 +53,10 @@ function explain(r::QualityReport)
     println(io, "Why was this status assigned?")
     n = 1
     if r.drift.detected
-        println(io, n, ". [inference] ", r.drift.kind, " drift flagged by :", r.drift.detector,
-                " (P=", round(r.drift.probability; digits = 2), ", magnitude=",
-                round(r.drift.magnitude; sigdigits = 3), ").")
+        println(io, n, ". [inference] ", r.drift.kind, " drift flagged by :",
+            r.drift.detector,
+            " (P=", round(r.drift.probability; digits = 2), ", magnitude=",
+            round(r.drift.magnitude; sigdigits = 3), ").")
         n += 1
     else
         println(io, n, ". [inference] No drift detector exceeded its decision threshold.")
@@ -58,26 +64,26 @@ function explain(r::QualityReport)
     end
     if r.change_points.detected && !isempty(r.change_points.indices)
         println(io, n, ". [statistical] Change-point method :", r.change_points.method,
-                " localized transition(s) at observation(s) ",
-                join(r.change_points.indices, ", "), ".")
+            " localized transition(s) at observation(s) ",
+            join(r.change_points.indices, ", "), ".")
         println(io, "   Selection reason: ", r.change_points.selection_reason)
         n += 1
     end
     if r.distribution !== nothing
         println(io, n, ". [statistical] Distribution comparison via :",
-                r.distribution.method, " — ", join(r.distribution.evidence, " "))
+            r.distribution.method, " — ", join(r.distribution.evidence, " "))
         n += 1
     end
     triggered = [q for q in r.qc if q.triggered]
     if !isempty(triggered)
         println(io, n, ". [observed] QC rule(s) triggered: ",
-                join((q.name for q in triggered), ", "), ".")
+            join((q.name for q in triggered), ", "), ".")
         n += 1
     end
     if r.outliers !== nothing && !isempty(r.outliers.indices)
         println(io, n, ". [statistical] ", length(r.outliers.indices),
-                " outlier(s) annotated with :", r.outliers.method,
-                " (not removed unless requested).")
+            " outlier(s) annotated with :", r.outliers.method,
+            " (not removed unless requested).")
         n += 1
     end
     if r.attribution !== nothing
@@ -87,8 +93,9 @@ function explain(r::QualityReport)
     println(io)
     println(io, "Score components (penalties in [0, 1]):")
     for k in keys(r.score.components)
-        println(io, "  ", rpad(k, 14), " ", round(getfield(r.score.components, k); digits = 3),
-                "   weight=", getfield(r.score.weights, k))
+        println(io, "  ", rpad(k, 14), " ",
+            round(getfield(r.score.components, k); digits = 3),
+            "   weight=", getfield(r.score.weights, k))
     end
     println(io)
     println(io, "Provenance")
@@ -104,7 +111,7 @@ function explain(r::QualityReport)
     end
     println(io)
     println(io, "Statement legend: [observed] fact from data; [statistical] computed ",
-            "statistic; [inference] algorithmic conclusion; [annotation] user note.")
+        "statistic; [inference] algorithmic conclusion; [annotation] user note.")
     String(take!(io))
 end
 
@@ -122,7 +129,7 @@ function explain(r::Reconstruction)
     end
     _explain_uncertainty(io, r.uncertainty)
     println(io, "Statement legend: [observed] fact from data; [statistical] computed ",
-            "statistic; [inference] algorithmic conclusion; [annotation] user note.")
+        "statistic; [inference] algorithmic conclusion; [annotation] user note.")
     String(take!(io))
 end
 
@@ -137,7 +144,8 @@ function explain(d::AbstractDict)
     analyte = _dget(d, "analyte")
     unit = _dget(d, "unit")
     status = _dget(d, "status_label", _dget(d, "status"))
-    analyte !== nothing && println(io, "Analyte: ", analyte, unit === nothing ? "" : "  ($unit)")
+    analyte !== nothing &&
+        println(io, "Analyte: ", analyte, unit === nothing ? "" : "  ($unit)")
     status !== nothing && println(io, "Status:  ", status)
     if rec isa AbstractDict
         println(io)
@@ -153,7 +161,7 @@ function explain(d::AbstractDict)
         ub isa AbstractDict && _explain_uncertainty(io, ub)
     end
     println(io, "Statement legend: [observed] fact from data; [statistical] computed ",
-            "statistic; [inference] algorithmic conclusion; [annotation] user note.")
+        "statistic; [inference] algorithmic conclusion; [annotation] user note.")
     String(take!(io))
 end
 
@@ -161,7 +169,7 @@ function explain(r::DriftResult)
     io = IOBuffer()
     println(io, "DriftResult (:", r.kind, " via :", r.detector, ")")
     println(io, "detected=", r.detected, "  P=", round(r.probability; digits = 3),
-            "  magnitude=", r.magnitude, "  direction=", r.direction)
+        "  magnitude=", r.magnitude, "  direction=", r.direction)
     for e in r.evidence
         println(io, "- ", e)
     end
@@ -186,17 +194,23 @@ function explain(r::HierarchicalSiteResult)
     println(io)
     println(io, r.notes)
     println(io)
-    println(io, "Attribution: ", r.attribution, "  concordance=", round(r.concordance; digits = 2))
+    println(
+        io,
+        "Attribution: ",
+        r.attribution,
+        "  concordance=",
+        round(r.concordance; digits = 2),
+    )
     println(io, "Grand mean:  ", round(r.grand_mean; digits = 4),
-            "  τ=", round(r.between_sd; digits = 4),
-            "  σ=", round(r.within_sd; digits = 4))
+        "  τ=", round(r.between_sd; digits = 4),
+        "  σ=", round(r.within_sd; digits = 4))
     println(io)
     for s in r.sites
         println(io, "- ", s.site, " n=", s.n,
-                " raw=", round(s.raw_mean; digits = 3),
-                " shrunk=", round(s.shrunk_mean; digits = 3),
-                " B=", round(s.shrinkage; digits = 2),
-                " drift=", s.drift.detected)
+            " raw=", round(s.raw_mean; digits = 3),
+            " shrunk=", round(s.shrunk_mean; digits = 3),
+            " B=", round(s.shrinkage; digits = 2),
+            " drift=", s.drift.detected)
     end
     println(io)
     for e in r.evidence
@@ -227,10 +241,18 @@ function _explain_uncertainty(io::IO, ub::UncertaintyBudget)
     println(io, "Uncertainty budget")
     println(io, "------------------")
     println(io, "n with uncertainty: ", ub.n_with_uncertainty)
-    println(io, "RMS(u):             ", ub.rms_measurement === nothing ? "—" : round(ub.rms_measurement; digits = 4))
+    println(
+        io,
+        "RMS(u):             ",
+        ub.rms_measurement === nothing ? "—" : round(ub.rms_measurement; digits = 4),
+    )
     println(io, "analytical SD:      ", round(ub.analytical_sd; digits = 4))
     println(io, "combined SD:        ", round(ub.combined_sd; digits = 4))
-    println(io, "weighted mean:      ", ub.weighted_mean === nothing ? "—" : round(ub.weighted_mean; digits = 4))
+    println(
+        io,
+        "weighted mean:      ",
+        ub.weighted_mean === nothing ? "—" : round(ub.weighted_mean; digits = 4),
+    )
     println(io, "magnitude SE:       ", round(ub.magnitude_se; digits = 4))
     println(io, ub.notes)
     println(io)

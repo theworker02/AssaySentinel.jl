@@ -39,8 +39,12 @@ makedocs(;
     warnonly = [:missing_docs],
 )
 
-deploydocs(;
-    repo = "github.com/theworker02/AssaySentinel.jl.git",
-    devbranch = "main",
-    push_preview = true,
-)
+# GitHub Pages is configured as a workflow deploy (`docs/build` artifact).
+# `deploydocs` is optional and only used when a Documenter SSH key is present.
+if !isempty(get(ENV, "DOCUMENTER_KEY", ""))
+    deploydocs(;
+        repo = "github.com/theworker02/AssaySentinel.jl.git",
+        devbranch = "main",
+        push_preview = true,
+    )
+end

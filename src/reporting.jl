@@ -15,7 +15,11 @@ function save(report::QualityReport, path::AbstractString)
     elseif ext == ".html" || ext == ".htm"
         write(path, html_report(report))
     else
-        throw(ArgumentError("Unsupported report extension '$ext'. Use .assay, .json, .md, or .html"))
+        throw(
+            ArgumentError(
+                "Unsupported report extension '$ext'. Use .assay, .json, .md, or .html",
+            ),
+        )
     end
     path
 end
@@ -55,17 +59,22 @@ function report(result::StudyReport, path::AbstractString)
     if ext == ".md" || ext == ".markdown"
         write(path, report(result))
     elseif ext == ".json"
-        write(path, json_string(Dict(
-            "name" => result.name,
-            "schema_version" => result.schema_version,
-            "package_version" => result.package_version,
-            "attribution" => string(result.hierarchy.attribution),
-            "grand_mean" => result.hierarchy.grand_mean,
-            "between_sd" => result.hierarchy.between_sd,
-            "concordance" => result.hierarchy.concordance,
-            "evidence" => result.hierarchy.evidence,
-            "sites" => collect(keys(result.site_reports)),
-        )))
+        write(
+            path,
+            json_string(
+                Dict(
+                    "name" => result.name,
+                    "schema_version" => result.schema_version,
+                    "package_version" => result.package_version,
+                    "attribution" => string(result.hierarchy.attribution),
+                    "grand_mean" => result.hierarchy.grand_mean,
+                    "between_sd" => result.hierarchy.between_sd,
+                    "concordance" => result.hierarchy.concordance,
+                    "evidence" => result.hierarchy.evidence,
+                    "sites" => collect(keys(result.site_reports)),
+                ),
+            ),
+        )
     else
         throw(ArgumentError("StudyReport save supports .md and .json"))
     end
@@ -91,14 +100,16 @@ function _reconstruction_dict(rec::Reconstruction)
     ub = rec.uncertainty
     Dict(
         "narrative" => rec.narrative,
-        "beats" => [Dict(
-            "label" => b.label,
-            "kind" => string(b.kind),
-            "timestamp" => b.timestamp === nothing ? nothing : string(b.timestamp),
-            "index" => b.index,
-            "statement_kind" => string(b.statement_kind),
-            "notes" => b.notes,
-        ) for b in rec.beats],
+        "beats" => [
+            Dict(
+                "label" => b.label,
+                "kind" => string(b.kind),
+                "timestamp" => b.timestamp === nothing ? nothing : string(b.timestamp),
+                "index" => b.index,
+                "statement_kind" => string(b.statement_kind),
+                "notes" => b.notes,
+            ) for b in rec.beats
+        ],
         "uncertainty" => Dict(
             "n_with_uncertainty" => ub.n_with_uncertainty,
             "rms_measurement" => ub.rms_measurement,
@@ -115,8 +126,10 @@ function _reconstruction_dict(rec::Reconstruction)
         "rng_seed" => rec.rng_seed === nothing ? nothing : string(rec.rng_seed),
         "input_fingerprint" => rec.input_fingerprint,
         "package_version" => rec.package_version,
-        "lot_evidence" => rec.lot_analysis === nothing ? nothing : collect(rec.lot_analysis.evidence),
-        "instrument_evidence" => rec.instrument_analysis === nothing ? nothing :
+        "lot_evidence" =>
+            rec.lot_analysis === nothing ? nothing : collect(rec.lot_analysis.evidence),
+        "instrument_evidence" =>
+            rec.instrument_analysis === nothing ? nothing :
             collect(rec.instrument_analysis.evidence),
     )
 end
@@ -135,8 +148,13 @@ function report_dict(r::QualityReport)
         "n" => r.n,
         "score" => Dict(
             "value" => r.score.value,
-            "components" => Dict(string(k) => getfield(r.score.components, k) for k in keys(r.score.components)),
-            "weights" => Dict(string(k) => getfield(r.score.weights, k) for k in keys(r.score.weights)),
+            "components" => Dict(
+                string(k) => getfield(r.score.components, k) for
+                k in keys(r.score.components)
+            ),
+            "weights" => Dict(
+                string(k) => getfield(r.score.weights, k) for k in keys(r.score.weights)
+            ),
             "formula" => r.score.formula,
         ),
         "drift" => Dict(
@@ -146,7 +164,8 @@ function report_dict(r::QualityReport)
             "direction" => string(r.drift.direction),
             "kind" => string(r.drift.kind),
             "detector" => string(r.drift.detector),
-            "start_time" => r.drift.start_time === nothing ? nothing : string(r.drift.start_time),
+            "start_time" =>
+                r.drift.start_time === nothing ? nothing : string(r.drift.start_time),
             "evidence" => r.drift.evidence,
         ),
         "change_points" => Dict(
@@ -159,16 +178,18 @@ function report_dict(r::QualityReport)
         "evidence" => r.evidence,
         "limitations" => r.limitations,
         "reconstruction" => _reconstruction_dict(r.reconstruction),
-        "provenance" => [Dict(
-            "id" => p.id,
-            "operation" => string(p.operation),
-            "func" => p.func,
-            "timestamp" => string(p.timestamp),
-            "input_fingerprint" => p.input_fingerprint,
-            "package_version" => p.package_version,
-            "statement_kind" => string(p.statement_kind),
-            "notes" => p.notes,
-        ) for p in r.provenance],
+        "provenance" => [
+            Dict(
+                "id" => p.id,
+                "operation" => string(p.operation),
+                "func" => p.func,
+                "timestamp" => string(p.timestamp),
+                "input_fingerprint" => p.input_fingerprint,
+                "package_version" => p.package_version,
+                "statement_kind" => string(p.statement_kind),
+                "notes" => p.notes,
+            ) for p in r.provenance
+        ],
     )
 end
 
@@ -197,7 +218,7 @@ function markdown_report(r::QualityReport)
         println(io)
         if rec.rng_seed !== nothing
             println(io, "Reproducibility: `rng_seed=", rec.rng_seed,
-                    "`  fingerprint=`", rec.input_fingerprint, "`")
+                "`  fingerprint=`", rec.input_fingerprint, "`")
         else
             println(io, "Fingerprint: `", rec.input_fingerprint, "`")
         end
@@ -208,10 +229,20 @@ function markdown_report(r::QualityReport)
         println(io, "| Quantity | Value |")
         println(io, "| --- | --- |")
         println(io, "| n with uncertainty | ", ub.n_with_uncertainty, " |")
-        println(io, "| RMS(u) | ", ub.rms_measurement === nothing ? "—" : ub.rms_measurement, " |")
+        println(
+            io,
+            "| RMS(u) | ",
+            ub.rms_measurement === nothing ? "—" : ub.rms_measurement,
+            " |",
+        )
         println(io, "| analytical SD | ", ub.analytical_sd, " |")
         println(io, "| combined SD | ", ub.combined_sd, " |")
-        println(io, "| weighted mean | ", ub.weighted_mean === nothing ? "—" : ub.weighted_mean, " |")
+        println(
+            io,
+            "| weighted mean | ",
+            ub.weighted_mean === nothing ? "—" : ub.weighted_mean,
+            " |",
+        )
         println(io, "| magnitude SE | ", ub.magnitude_se, " |")
         println(io)
         println(io, ub.notes)
@@ -223,10 +254,22 @@ function markdown_report(r::QualityReport)
     end
     println(io)
     println(io, "## Methods")
-    println(io, "- Change-point: `", r.change_points.method, "` — ", r.change_points.selection_reason)
+    println(
+        io,
+        "- Change-point: `",
+        r.change_points.method,
+        "` — ",
+        r.change_points.selection_reason,
+    )
     println(io, "- Drift: `", r.drift.detector, "` / `", r.drift.kind, "`")
     if r.distribution !== nothing
-        println(io, "- Distribution: `", r.distribution.method, "` — ", r.distribution.selection_reason)
+        println(
+            io,
+            "- Distribution: `",
+            r.distribution.method,
+            "` — ",
+            r.distribution.selection_reason,
+        )
     end
     println(io)
     println(io, "## Score components")
@@ -234,7 +277,7 @@ function markdown_report(r::QualityReport)
     println(io, "| --- | --- | --- |")
     for k in keys(r.score.components)
         println(io, "| ", k, " | ", round(getfield(r.score.components, k); digits = 3),
-                " | ", getfield(r.score.weights, k), " |")
+            " | ", getfield(r.score.weights, k), " |")
     end
     println(io)
     println(io, "## Provenance")
@@ -248,7 +291,10 @@ function markdown_report(r::QualityReport)
     end
     println(io)
     println(io, "## Auditability")
-    println(io, "Statements are tagged as observed fact, statistical result, algorithmic inference, or annotation.")
+    println(
+        io,
+        "Statements are tagged as observed fact, statistical result, algorithmic inference, or annotation.",
+    )
     String(take!(io))
 end
 
@@ -259,8 +305,10 @@ function html_report(r::QualityReport)
     if r.reconstruction !== nothing
         c = r.reconstruction.charts
         extra = ""
-        hasproperty(c, :lots) && !isempty(c.lots) && (extra *= "<figure>$(c.lots)</figure>\n")
-        hasproperty(c, :instruments) && !isempty(c.instruments) && (extra *= "<figure>$(c.instruments)</figure>\n")
+        hasproperty(c, :lots) && !isempty(c.lots) &&
+            (extra *= "<figure>$(c.lots)</figure>\n")
+        hasproperty(c, :instruments) && !isempty(c.instruments) &&
+            (extra *= "<figure>$(c.instruments)</figure>\n")
         figs = """
         <h2>Charts</h2>
         <figure>$(c.timeline)</figure>
@@ -333,7 +381,9 @@ function _md_to_html(md::AbstractString)
             if all(occursin(r"^[\s:-]+$", c) for c in cells)
                 continue
             end
-            tag = occursin("Field", line) || occursin("Component", line) || occursin("Quantity", line) ? "th" : "td"
+            tag =
+                occursin("Field", line) || occursin("Component", line) ||
+                occursin("Quantity", line) ? "th" : "td"
             print(io, "<tr>")
             for c in cells
                 print(io, "<", tag, ">", _esc(strip(c)), "</", tag, ">")

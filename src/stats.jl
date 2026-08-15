@@ -442,7 +442,11 @@ end
 
 Histogram-based Jensen–Shannon divergence (Lin 1991), in nats.
 """
-function jensen_shannon(a::AbstractVector{<:Real}, b::AbstractVector{<:Real}; bins::Int = 20)
+function jensen_shannon(
+    a::AbstractVector{<:Real},
+    b::AbstractVector{<:Real};
+    bins::Int = 20,
+)
     lo = min(minimum(a), minimum(b))
     hi = max(maximum(a), maximum(b))
     hi == lo && return 0.0
@@ -479,8 +483,8 @@ end
 Percentile bootstrap confidence interval.
 """
 function bootstrap_ci(x::AbstractVector{<:Real}, stat::Function;
-                      nboot::Int = 400, rng::AbstractRNG = Random.default_rng(),
-                      α::Float64 = 0.05)
+    nboot::Int = 400, rng::AbstractRNG = Random.default_rng(),
+    α::Float64 = 0.05)
     n = length(x)
     n < 2 && return nothing
     samples = Vector{Float64}(undef, nboot)

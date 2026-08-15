@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   docs:
     name: Build and deploy
@@ -21,10 +25,19 @@ jobs:
         with:
           version: "1.10"
       - uses: julia-actions/cache@v2
-      - name: Live Documenter site
+      - name: Build docs
         run: |
           julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); include("docs/make.jl")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
           JULIA_PKG_PRECOMPILE_AUTO: "0"
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build
+      - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
+        id: deployment
+        uses: actions/deploy-pages@v4

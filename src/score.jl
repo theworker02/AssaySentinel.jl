@@ -29,14 +29,15 @@ function sentinel_score(;
     w = weights
     s = w.drift + w.variance + w.qc + w.calibration + w.distribution + w.missingness
     s == 0 && (s = 1.0)
-    penalty = (
-        w.drift * clamp(drift_prob, 0, 1) +
-        w.variance * clamp(variance_penalty, 0, 1) +
-        w.qc * clamp(qc_penalty, 0, 1) +
-        w.calibration * clamp(calibration_penalty, 0, 1) +
-        w.distribution * clamp(distribution_penalty, 0, 1) +
-        w.missingness * clamp(missing_penalty, 0, 1)
-    ) / s
+    penalty =
+        (
+            w.drift * clamp(drift_prob, 0, 1) +
+            w.variance * clamp(variance_penalty, 0, 1) +
+            w.qc * clamp(qc_penalty, 0, 1) +
+            w.calibration * clamp(calibration_penalty, 0, 1) +
+            w.distribution * clamp(distribution_penalty, 0, 1) +
+            w.missingness * clamp(missing_penalty, 0, 1)
+        ) / s
     value = clamp(100 - 100 * penalty, 0.0, 100.0)
     components = (
         drift = Float64(drift_prob),

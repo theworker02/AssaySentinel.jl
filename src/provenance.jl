@@ -50,9 +50,12 @@ function provenance_lines(records::Vector{ProvenanceRecord})
     isempty(records) && return ["(no provenance recorded)"]
     lines = String[]
     for (i, r) in enumerate(records)
-        push!(lines, @sprintf("%d. %s → %s  [%s]  fp=%s  v=%s",
-                              i, r.operation, r.func, r.statement_kind,
-                              r.input_fingerprint, r.package_version))
+        push!(
+            lines,
+            @sprintf("%d. %s → %s  [%s]  fp=%s  v=%s",
+                i, r.operation, r.func, r.statement_kind,
+                r.input_fingerprint, r.package_version)
+        )
         if !isempty(r.notes)
             push!(lines, "   " * r.notes)
         end

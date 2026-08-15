@@ -12,17 +12,18 @@ Levey–Jennings control chart with center line, ±1/2/3 SD, events, and
 optional change points.
 """
 function AssaySentinel.levey_jennings(values, spec::AssaySentinel.QCSpec;
-                                      timestamps = nothing,
-                                      events = AssaySentinel.AbstractEvent[],
-                                      changepoints = DateTime[])
+    timestamps = nothing,
+    events = AssaySentinel.AbstractEvent[],
+    changepoints = DateTime[])
     data = AssaySentinel.levey_jennings_data(values, spec; timestamps, events)
     fig = Figure(; size = (900, 420), backgroundcolor = :white)
     ax = Axis(fig[1, 1];
-              title = "Levey–Jennings control chart",
-              xlabel = "observation",
-              ylabel = "value",
-              titlesize = 16)
-    x = timestamps === nothing ? collect(1:length(data.values)) :
+        title = "Levey–Jennings control chart",
+        xlabel = "observation",
+        ylabel = "value",
+        titlesize = 16)
+    x =
+        timestamps === nothing ? collect(1:length(data.values)) :
         [Dates.value(Millisecond(t - timestamps[1])) / 3.6e6 for t in data.timestamps]
     hlines!(ax, [data.center]; color = "#1B2838", linewidth = 2)
     for (y, col, ls) in (
@@ -38,21 +39,28 @@ function AssaySentinel.levey_jennings(values, spec::AssaySentinel.QCSpec;
     scatterlines!(ax, x, data.values; color = "#1B2838", markersize = 6)
     for e in events
         t = AssaySentinel.event_time(e)
-        xv = timestamps === nothing ? 0.0 :
-             Dates.value(Millisecond(t - timestamps[1])) / 3.6e6
+        xv =
+            timestamps === nothing ? 0.0 :
+            Dates.value(Millisecond(t - timestamps[1])) / 3.6e6
         vlines!(ax, [xv]; color = "#2F7A78", linestyle = :dash)
     end
     for t in changepoints
-        xv = timestamps === nothing ? 0.0 :
-             Dates.value(Millisecond(t - timestamps[1])) / 3.6e6
+        xv =
+            timestamps === nothing ? 0.0 :
+            Dates.value(Millisecond(t - timestamps[1])) / 3.6e6
         vlines!(ax, [xv]; color = "#C9892A", linewidth = 2)
     end
     fig
 end
 
-function AssaySentinel.levey_jennings(control::AssaySentinel.ControlSample, measurements; kwargs...)
-    vals = eltype(measurements) <: AssaySentinel.Measurement ?
-           [m.value for m in measurements] : measurements
+function AssaySentinel.levey_jennings(
+    control::AssaySentinel.ControlSample,
+    measurements;
+    kwargs...,
+)
+    vals =
+        eltype(measurements) <: AssaySentinel.Measurement ?
+        [m.value for m in measurements] : measurements
     AssaySentinel.levey_jennings(vals, AssaySentinel.QCSpec(control); kwargs...)
 end
 
