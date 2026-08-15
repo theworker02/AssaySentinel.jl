@@ -63,6 +63,6 @@ julia --project=docs docs/live.jl
 ## Next
 
 - [Quickstart](@ref)
-- [Statistical Methods](@ref)
+- [Statistical methods](@ref)
 - [Extensions](@ref)
 - [Validation](@ref)

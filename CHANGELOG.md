@@ -14,6 +14,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Citation metadata matches package version 1.3.0
 - Duplicate `_truthy` no longer overwrites during package precompile
 - Documenter no longer registers the SVG logo as an HTML asset (unsupported class)
+- Docs include a bibliography page and a resolvable Statistical methods link
 
 ## [1.3.0] - 2026-08-15
 

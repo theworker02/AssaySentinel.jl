@@ -32,6 +32,7 @@ makedocs(;
         "Statistical Methods" => "statistical_methods.md",
         "Validation" => "validation.md",
         "Examples" => "examples.md",
+        "References" => "references.md",
     ],
     plugins = [bib],
     checkdocs = :exports,
