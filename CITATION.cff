@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: AssaySentinel.jl
+message: If you use this software, please cite it using these metadata.
+type: software
+authors:
+  - name: "theworker02"
+    website: https://github.com/theworker02
+repository-code: https://github.com/theworker02/AssaySentinel.jl
+url: https://github.com/theworker02/AssaySentinel.jl
+abstract: >-
+  Scientific assay quality, drift detection, calibration surveillance,
+  batch analysis, and reproducible measurement provenance for Julia.
+keywords:
+  - julia
+  - science
+  - statistics
+  - laboratory
+  - quality-control
+  - analytical-chemistry
+  - biostatistics
+  - change-point-detection
+  - drift-detection
+  - reproducibility
+  - scientific-computing
+license: MIT
+version: 0.1.0
+date-released: "2026-08-14"

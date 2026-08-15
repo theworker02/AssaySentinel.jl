@@ -1,0 +1,32 @@
+name: Scientific validation
+description: Report a validation finding or request a reference comparison
+labels: ["validation"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Agreement with a published example
+        - Disagreement with a published example
+        - Simulation study
+        - External dataset (non-identifiable)
+        - Documentation gap
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: Method and expected result
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed AssaySentinel result
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: References

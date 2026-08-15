@@ -1,0 +1,28 @@
+name: Statistical method
+description: Propose or discuss a statistical method
+labels: ["statistics"]
+body:
+  - type: input
+    id: method
+    attributes:
+      label: Method name
+    validations:
+      required: true
+  - type: textarea
+    id: citation
+    attributes:
+      label: Primary citation
+      description: Author, year, venue, DOI if available.
+    validations:
+      required: true
+  - type: textarea
+    id: assumptions
+    attributes:
+      label: Assumptions and limitations
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: How should it be validated?
+      description: Reference examples, known critical values, or simulation design.

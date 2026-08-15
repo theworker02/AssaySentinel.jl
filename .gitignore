@@ -1,0 +1,24 @@
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+deps/deps.jl
+Manifest.toml
+!docs/Manifest.toml
+
+# Build / docs
+docs/build/
+docs/site/
+/docs/src/assets/generated/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Local scratch
+tmp/
+scratch/
+*.log

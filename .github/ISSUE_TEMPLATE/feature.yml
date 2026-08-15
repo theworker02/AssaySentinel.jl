@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose an AssaySentinel capability
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What analytical-quality question is hard to answer today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Drift / change-point
+        - QC rules
+        - Calibration
+        - Batch effects
+        - Reference intervals
+        - Provenance / reports
+        - Streaming / alerts
+        - Simulation / evaluation
+        - Documentation
+        - Other
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This request does not ask AssaySentinel to diagnose patients or recommend treatment.
+          required: true

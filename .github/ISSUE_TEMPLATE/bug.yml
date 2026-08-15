@@ -1,0 +1,42 @@
+name: Bug report
+description: Report an AssaySentinel bug
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve AssaySentinel. Please do not paste patient-identifiable data.
+        This software is not a diagnostic medical device.
+  - type: input
+    id: version
+    attributes:
+      label: AssaySentinel version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: julia
+    attributes:
+      label: Julia version
+      placeholder: "1.10.10"
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Prefer synthetic measurements. Never include protected health information.
+    validations:
+      required: true

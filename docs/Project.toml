@@ -1,0 +1,9 @@
+[deps]
+AssaySentinel = "ff2b576f-490a-4543-9734-7d4d656bfeb7"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterCitations = "daee34ce-89f3-4620-b898-9a4f33d3dfe1"
+LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
+
+[compat]
+Documenter = "1"
+DocumenterCitations = "1"

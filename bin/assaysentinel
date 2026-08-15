@@ -1,0 +1,4 @@
+#!/usr/bin/env julia
+# CLI entry: julia --project bin/assaysentinel <command>
+using AssaySentinel
+exit(AssaySentinel.main(ARGS))
