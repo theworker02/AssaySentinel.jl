@@ -5,14 +5,17 @@
 
 Random-effects site model (DerSimonian–Laird / empirical Bayes):
 
-1. Per-site mean and SD
+1. Per-site mean, SD, and standard error
 2. Between-site τ² and within-site σ²
 3. Shrink site means toward the grand mean
-4. Per-site and pooled drift
-5. Cochran Q on site drift magnitudes → `:global`, `:site_specific`, `:mixed`, or `:stable`
+4. Higgins I² and a 95% prediction interval for a new site mean
+5. Per-site and pooled drift
+6. Cochran Q on site drift magnitudes → `:global`, `:site_specific`, `:mixed`, or `:stable`
 
 `method=:turing` uses the Turing extension (hierarchical site intercepts +
 shared change). The default `:eb` path is stdlib-only.
+
+Attribution is a statistical description of sharing, not a cause.
 """
 function hierarchical_sites(data;
     site,
@@ -32,7 +35,7 @@ function hierarchical_sites(data;
         push!(sites, string(s))
         push!(vals, Float64(v))
         t = _rowget(r, timestamps)
-        push!(ts, t === nothing || t isa Missing ? now() + Second(i) : DateTime(t))
+        push!(ts, t === nothing || t isa Missing ? DateTime(2020, 1, 1) + Hour(i) : DateTime(t))
     end
     hierarchical_sites(vals, sites; timestamps = ts, method, rng)
 end
@@ -43,6 +46,8 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     rng::AbstractRNG = Random.default_rng())
     length(values) == length(sites) ||
         throw(ArgumentError("values and sites must have the same length"))
+    timestamps !== nothing && length(timestamps) != length(values) &&
+        throw(ArgumentError("timestamps must match values"))
     vals = Float64[]
     labs = String[]
     ts = DateTime[]
@@ -67,30 +72,51 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     groups = [vals[labs .== s] for s in uniq]
     times = [ts[labs .== s] for s in uniq]
     ns = length.(groups)
+    any(<(1), ns) && throw(ArgumentError("each site needs at least one finite value"))
     means = mean.(groups)
     sds = [length(g) >= 2 ? std(g) : 0.0 for g in groups]
-    σ2 =
-        sum((ns[i] - 1) * sds[i]^2 for i in eachindex(uniq)) /
-        max(sum(ns) - length(uniq), 1)
-    σ2 = σ2 > 0 && isfinite(σ2) ? σ2 : 1.0
-    w = [n / σ2 for n in ns]
-    μ = sum(w .* means) / sum(w)
-    Qloc = sum(w[i] * (means[i] - μ)^2 for i in eachindex(uniq))
-    denom = sum(w) - sum(abs2, w) / sum(w)
-    τ2 = denom > 0 ? max(0.0, (Qloc - (length(uniq) - 1)) / denom) : 0.0
+    dfw = max(sum(ns) - length(uniq), 1)
+    σ2_raw = sum((ns[i] - 1) * sds[i]^2 for i in eachindex(uniq)) / dfw
+    has_within = σ2_raw > 0 && isfinite(σ2_raw)
+    σ2 = has_within ? σ2_raw : 1.0
+    ses = [
+        ns[i] >= 2 && sds[i] > 0 ? sds[i] / sqrt(ns[i]) :
+        (has_within ? sqrt(σ2 / ns[i]) : 0.0) for i in eachindex(uniq)
+    ]
+    k = length(uniq)
+    if has_within
+        w = [1 / max(ses[i]^2, eps()) for i in eachindex(uniq)]
+        μ = sum(w .* means) / sum(w)
+        Qloc = sum(w[i] * (means[i] - μ)^2 for i in eachindex(uniq))
+        denom = sum(w) - sum(abs2, w) / sum(w)
+        τ2 = denom > 0 ? max(0.0, (Qloc - (k - 1)) / denom) : 0.0
+        i2 = Qloc > 0 ? max(0.0, 100 * (Qloc - (k - 1)) / Qloc) : 0.0
+    else
+        μ = mean(means)
+        τ2 = k >= 2 ? var(means) : 0.0
+        Qloc = (k - 1) * τ2
+        i2 = 100.0
+    end
     τ = sqrt(τ2)
+    wstar = [1 / (max(ses[i]^2, 0.0) + τ2 + eps()) for i in eachindex(uniq)]
+    se_μ = sqrt(1 / sum(wstar))
+    tcrit = _t_crit_975(k - 2)
+    pred_sd = sqrt(τ2 + se_μ^2)
+    plo = μ - tcrit * pred_sd
+    phi = μ + tcrit * pred_sd
+
     effects = SiteEffect[]
     drifts = DriftResult[]
     for i in eachindex(uniq)
-        se2 = σ2 / ns[i]
-        B = τ2 / (τ2 + se2)
+        se2 = ses[i]^2
+        B = (τ2 + se2) > 0 ? τ2 / (τ2 + se2) : 1.0
         α = B * (means[i] - μ)
         d =
             length(groups[i]) >= 16 ?
             detect_drift(groups[i]; kind = :auto, timestamps = times[i], rng) :
             DriftResult(; detected = false, detector = :none, kind = :unspecified)
         push!(drifts, d)
-        push!(effects, SiteEffect(uniq[i], ns[i], means[i], μ + α, sds[i], B, d))
+        push!(effects, SiteEffect(uniq[i], ns[i], means[i], μ + α, sds[i], B, ses[i], d))
     end
 
     # Site-adjusted pooled series for global drift
@@ -99,7 +125,11 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     for i in eachindex(vals)
         adj[i] = vals[i] - (lookup[labs[i]] - μ)
     end
-    global_d = detect_drift(adj; kind = :auto, timestamps = ts, rng)
+    ord = sortperm(ts)
+    global_d =
+        length(vals) >= 16 && has_within ?
+        detect_drift(adj[ord]; kind = :auto, timestamps = ts[ord], rng) :
+        DriftResult(; detected = false, detector = :none, kind = :unspecified)
 
     mags = Float64[]
     dirs = Symbol[]
@@ -137,19 +167,22 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
         :stable
     end
     ev = [
-        "k=$(length(uniq)) sites; grand mean $(round(μ; digits=3)); τ=$(round(τ; digits=3)); σ=$(round(sqrt(σ2); digits=3)).",
-        "Site-mean heterogeneity Q=$(round(Qloc; digits=2)) (df=$(length(uniq)-1)).",
+        "k=$(k) sites; grand mean $(round(μ; digits=3)); τ=$(round(τ; digits=3)); σ=$(round(has_within ? sqrt(σ2) : 0.0; digits=3)).",
+        "Site-mean heterogeneity Q=$(round(Qloc; digits=2)) (df=$(k - 1)); I²=$(round(i2; digits=1))%$(has_within ? "" : "; within-site SD was zero so I² is 100% by convention").",
+        "95% prediction interval for a new site mean: $(round(plo; digits=3)) – $(round(phi; digits=3)).",
         "Drift heterogeneity Q=$(round(Qd; digits=2)), p=$(round(pd; digits=4)); concordance=$(round(conc; digits=2)).",
         "Attribution :$attr is a statistical description of sharing, not a cause.",
     ]
     HierarchicalSiteResult(
-        effects, μ, τ, sqrt(σ2), global_d, Qd, pd, attr, conc, ev,
+        effects, μ, τ, has_within ? sqrt(σ2) : 0.0, global_d, Qd, pd, attr, conc, i2, plo, phi, ev,
         "Hierarchical site model. Temporal association across sites is not causation. Not a diagnostic device.",
         (;
             method = :eb,
             Q_location = Qloc,
             n = length(vals),
+            se_mu = se_μ,
             schema_version = string(SCHEMA_VERSION),
+            within_estimated = has_within,
         ),
     )
 end
@@ -174,7 +207,8 @@ end
     analyze(study, streams; rng)
 
 Analyze each site stream and combine them with `hierarchical_sites`.
-`streams` maps site name → `AssayStream`.
+`streams` maps site name → `AssayStream`. The study reconstruction (forest
+plot, sharing narrative, uncertainty budget) is attached to the `StudyReport`.
 """
 function analyze(study::Study, streams::AbstractDict;
     rng::AbstractRNG = Random.default_rng(), kwargs...)
@@ -195,9 +229,11 @@ function analyze(study::Study, streams::AbstractDict;
     end
     hier = hierarchical_sites(rows; site = :site, value = :value,
         timestamps = :timestamp, rng = Random.Xoshiro(seed))
+    rec = reconstruct(hier, site_reports; rng_seed = seed, name = study.name)
     StudyReport(study.name, hier, site_reports, SAFETY_NOTICE,
         string(SCHEMA_VERSION), string(PACKAGE_VERSION),
-        (; n_sites = length(site_reports), study_sites = [s.name for s in study.sites]))
+        (; n_sites = length(site_reports), study_sites = [s.name for s in study.sites]),
+        rec)
 end
 
 """
@@ -205,6 +241,8 @@ end
 
 Streaming monitor for several sites. A study-level alert fires when enough
 sites alarm inside the concordance window (default: 2 sites within 7 days).
+Concordance alerts themselves respect `concordance_cooldown` so a persistent
+shared signal is not re-emitted on every subsequent observation.
 """
 mutable struct StudySentinel
     name::String
@@ -213,18 +251,22 @@ mutable struct StudySentinel
     callbacks::Vector{Function}
     min_sites::Int
     window::Period
+    concordance_cooldown::Period
+    last_concordance::Union{Nothing, DateTime}
 end
 
 function StudySentinel(baselines::AbstractDict{<:AbstractString, Baseline};
     name::AbstractString = "study",
     min_sites::Int = 2,
     window::Period = Day(7),
-    cooldown::Period = Hour(6))
+    cooldown::Period = Hour(6),
+    concordance_cooldown::Period = cooldown)
     sent = Dict{String, Sentinel}()
     for (k, b) in baselines
         sent[string(k)] = Sentinel(b; cooldown)
     end
-    StudySentinel(String(name), sent, Alert[], Function[], min_sites, window)
+    StudySentinel(String(name), sent, Alert[], Function[], min_sites, window,
+        concordance_cooldown, nothing)
 end
 
 function onalert(f::Function, study::StudySentinel)
@@ -237,42 +279,51 @@ function update!(study::StudySentinel, site::AbstractString, measurement)
         throw(ArgumentError("unknown site $(site)"))
     r = update!(study.sentinels[string(site)], measurement)
     t = measurement isa Measurement ? measurement.timestamp : now()
-    recent = Alert[]
-    for (s, sent) in study.sentinels
-        for a in sent.alerts
-            if t - a.timestamp <= study.window
-                push!(recent, a)
-            end
-        end
-    end
-    sites_hit = unique(
-        begin
-            # site identity is the sentinel key that owns the alert
-            [
-                k for (k, sent) in study.sentinels if
-                any(a -> t - a.timestamp <= study.window, sent.alerts)
-            ]
-        end,
-    )
+    sites_hit = [
+        k for (k, sent) in study.sentinels if
+        any(a -> t - a.timestamp <= study.window, sent.alerts)
+    ]
     if length(sites_hit) >= study.min_sites
-        a = Alert(; severity = :warning, timestamp = t,
-            message = "Concordant analytical signals at $(length(sites_hit)) sites (not causation).",
-            kind = :hierarchical,
-            evidence = ["Sites: $(join(sites_hit, ", "))."])
-        push!(study.alerts, a)
-        for cb in study.callbacks
-            cb(a)
+        cooled =
+            study.last_concordance === nothing ||
+            t >= study.last_concordance + study.concordance_cooldown
+        if cooled
+            a = Alert(; severity = :warning, timestamp = t,
+                message = "Concordant analytical signals at $(length(sites_hit)) sites (not causation).",
+                kind = :hierarchical,
+                evidence = ["Sites: $(join(sort(sites_hit), ", "))."])
+            push!(study.alerts, a)
+            study.last_concordance = t
+            for cb in study.callbacks
+                cb(a)
+            end
+            return a
         end
-        return a
     end
     r
+end
+
+"""
+    result(study::StudySentinel)
+
+Snapshot of per-site sentinels and any study-level concordance alerts.
+"""
+function result(study::StudySentinel)
+    (
+        name = study.name,
+        n_sites = length(study.sentinels),
+        n_concordance_alerts = length(study.alerts),
+        last_concordance = study.last_concordance,
+        site_alerts = Dict(k => length(s.alerts) for (k, s) in study.sentinels),
+    )
 end
 
 function Base.show(io::IO, r::HierarchicalSiteResult)
     println(io, "HierarchicalSiteResult")
     println(io, "sites: ", length(r.sites), "  attribution: ", r.attribution)
     println(io, "grand mean: ", round(r.grand_mean; digits = 3),
-        "  τ: ", round(r.between_sd; digits = 3))
+        "  τ: ", round(r.between_sd; digits = 3),
+        "  I²: ", round(r.i2; digits = 1), "%")
     print(io, "concordance: ", round(r.concordance; digits = 2))
 end
 
@@ -280,4 +331,19 @@ function Base.show(io::IO, r::StudyReport)
     println(io, "AssaySentinel StudyReport ", r.name)
     println(io, "schema ", r.schema_version, "  package ", r.package_version)
     print(io, r.hierarchy)
+    if r.reconstruction !== nothing
+        println(io)
+        println(io, "Reconstruction:")
+        print(io, r.reconstruction.narrative)
+    end
+end
+
+function Base.summary(r::StudyReport)
+    (
+        name = r.name,
+        n_sites = length(r.site_reports),
+        attribution = r.hierarchy.attribution,
+        i2 = r.hierarchy.i2,
+        concordance = r.hierarchy.concordance,
+    )
 end

@@ -157,6 +157,7 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
         eb.sites, mean(μs), mean(τs), eb.within_sd, global_d,
         eb.heterogeneity_q, eb.heterogeneity_p,
         global_d.detected ? :global : eb.attribution, eb.concordance,
+        eb.i2, eb.prediction_lo, eb.prediction_hi,
         vcat(global_d.evidence, eb.evidence),
         eb.notes,
         (;

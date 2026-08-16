@@ -66,6 +66,10 @@
         @test loaded["reconstruction"]["uncertainty"]["n_with_uncertainty"] ==
               rec.uncertainty.n_with_uncertainty
         lex = explain(loaded)
+        @test occursin("reconstruction", lowercase(lex))
+        html_txt = read(html, String)
+        @test occursin("</body>", html_txt)
+        @test occursin("<ul>", html_txt)
         @test occursin("↓", lex)
         @test occursin("Uncertainty budget", lex)
 

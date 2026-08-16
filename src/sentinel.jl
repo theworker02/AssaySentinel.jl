@@ -284,7 +284,8 @@ function analyze(panel::AssayPanel;
         end
     else
         for i in eachindex(names)
-            results[i] = analyze(panel.streams[names[i]]; rng, kwargs...)
+            local_rng = Random.Xoshiro(seed + UInt64(i))
+            results[i] = analyze(panel.streams[names[i]]; rng = local_rng, kwargs...)
         end
     end
     (; panel = panel.name, reports = Dict(names[i] => results[i] for i in eachindex(names)))

@@ -7,18 +7,26 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Changed
+## [1.4.0] - 2026-08-15
 
-- README badges, pending-General install notes, and a branded Documenter landing page
+### Added
+
+- Study reconstruction: `analyze(study, streams)` attaches a dated story, between/within uncertainty budget, forest plot, and provenance graph
+- `svg_forest_chart` and HTML/JSON/`.assay` study reports (`report` / `save`)
+- Higgins I² and a 95% prediction interval for a new site mean on `HierarchicalSiteResult`
+- Per-site standard errors on `SiteEffect`
+- `StudySentinel` concordance cooldown and `result(study)` snapshot
+- CLI `study` command for multi-site CSV files
+- `reconstruct(study, streams)` / `reconstruct(StudyReport)`
 
 ### Fixed
 
-- `Project.toml` used the wrong Logging stdlib UUID, which blocked CI instantiate
-- `docs/Project.toml` uses the General-registry UUID for DocumenterCitations
-- Citation metadata matches package version 1.3.0
-- Duplicate `_truthy` no longer overwrites during package precompile
-- Documenter no longer registers the SVG logo as an HTML asset (unsupported class)
-- Docs include a bibliography page and a resolvable Statistical methods link
+- Study-level concordance alerts no longer fire on every subsequent observation
+- HTML reports close `</body>` and wrap Markdown lists in `<ul>`
+- `hierarchical_sites` table ingest no longer uses wall-clock timestamps for missing times
+- Sequential `analyze(panel)` uses independent RNGs per analyte (same as the threaded path)
+- Timestamp length is checked in `hierarchical_sites`
+- Site-mean heterogeneity with no within-site scatter is no longer labeled as global drift
 
 ## [1.3.0] - 2026-08-15
 
@@ -63,6 +71,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - CLI (`analyze`, `drift`, `batch`, `reference`, `compare`, `report`, `simulate`, `doctor`, `version`)
 - Documentation, CI, and brand assets
 
-[Unreleased]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.3.0...HEAD
 [1.3.0]: https://github.com/theworker02/AssaySentinel.jl/releases/tag/v1.3.0
 [0.1.0]: https://github.com/theworker02/AssaySentinel.jl/releases/tag/v0.1.0

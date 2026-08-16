@@ -200,6 +200,9 @@ function explain(r::HierarchicalSiteResult)
         r.attribution,
         "  concordance=",
         round(r.concordance; digits = 2),
+        "  I²=",
+        round(r.i2; digits = 1),
+        "%",
     )
     println(io, "Grand mean:  ", round(r.grand_mean; digits = 4),
         "  τ=", round(r.between_sd; digits = 4),
@@ -209,6 +212,7 @@ function explain(r::HierarchicalSiteResult)
         println(io, "- ", s.site, " n=", s.n,
             " raw=", round(s.raw_mean; digits = 3),
             " shrunk=", round(s.shrunk_mean; digits = 3),
+            " se=", round(s.se; digits = 3),
             " B=", round(s.shrinkage; digits = 2),
             " drift=", s.drift.detected)
     end

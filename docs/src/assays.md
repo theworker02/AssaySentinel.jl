@@ -15,14 +15,19 @@ explicitly refuses causal language.
 
 `hierarchical_sites` fits a DerSimonian–Laird / empirical-Bayes site model
 (per-site means, between-site τ², shrinkage toward the grand mean) and
-attributes sharing as `:global`, `:site_specific`, `:mixed`, or `:stable`.
+reports Higgins I² plus a 95% prediction interval for a new site mean.
+Sharing is attributed as `:global`, `:site_specific`, `:mixed`, or `:stable`.
 That label is a statistical description of sharing, not a cause.
 
 ```julia
 result = hierarchical_sites(values, sites)
-analyze(study, Dict("Lab-A" => stream_a, "Lab-B" => stream_b))
+svg_forest_chart(result)
+srep = analyze(study, Dict("Lab-A" => stream_a, "Lab-B" => stream_b))
+explain(srep)
+report(srep, "study-report.html")
 ```
 
 `StudySentinel` is the streaming counterpart: a study-level alert fires when
 enough sites alarm inside the concordance window (default: 2 sites within
-7 days).
+7 days), then respects a concordance cooldown so a persistent shared signal
+is not re-emitted on every observation.

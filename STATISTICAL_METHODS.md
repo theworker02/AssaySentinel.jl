@@ -23,6 +23,7 @@ Canonical citations for algorithms implemented in AssaySentinel.jl. See also
 | Natural cubic spline | `calibrate(...; model=:spline)` | interpolating cubic, not piecewise linear |
 | Reference intervals | `reference_interval` | CLSI EP28-A3c; Box & Cox 1964; Horn 1998; Cole & Green 1992 |
 | Partitioning | `assess_partitions` | Harris & Boyd 1990 |
+| Hierarchical sites | `hierarchical_sites` | DerSimonian & Laird 1986; Higgins & Thompson 2002; Higgins, Thompson & Spiegelhalter 2009 |
 | MAD outliers | `detect_outliers` | Rousseeuw & Croux 1993 |
 | Jensen–Shannon | `compare_distribution(...; method=:js)` | Lin 1991 |
 

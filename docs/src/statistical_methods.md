@@ -56,6 +56,13 @@ CLSI EP28 nonparametric convention [clsi_ep28](@cite); Harris–Boyd partitionin
 evidence [harris1990](@cite). Output is statistical, not a clinical
 recommendation.
 
+## Hierarchical sites
+
+DerSimonian–Laird τ² [dersimonian1986](@cite) with empirical-Bayes shrinkage
+of site means; Higgins I² [higgins2002](@cite); 95% prediction interval for a
+new site mean [higgins2009](@cite). Attribution (`:global` / `:site_specific` /
+`:mixed` / `:stable`) describes statistical sharing, not a cause.
+
 ## Distances
 
 1-Wasserstein (quantile matching); Jensen–Shannon [lin1991](@cite); energy

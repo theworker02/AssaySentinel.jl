@@ -862,6 +862,7 @@ struct SiteEffect
     shrunk_mean::Float64
     raw_sd::Float64
     shrinkage::Float64
+    se::Float64
     drift::DriftResult
 end
 
@@ -881,6 +882,9 @@ struct HierarchicalSiteResult
     heterogeneity_p::Float64
     attribution::Symbol
     concordance::Float64
+    i2::Float64
+    prediction_lo::Float64
+    prediction_hi::Float64
     evidence::Vector{String}
     notes::String
     metadata::NamedTuple
@@ -900,4 +904,5 @@ struct StudyReport
     schema_version::String
     package_version::String
     metadata::NamedTuple
+    reconstruction::Union{Nothing, Reconstruction}
 end

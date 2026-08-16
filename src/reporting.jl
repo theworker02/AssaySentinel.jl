@@ -24,6 +24,28 @@ function save(report::QualityReport, path::AbstractString)
     path
 end
 
+function save(report::StudyReport, path::AbstractString)
+    ext = lowercase(splitext(path)[2])
+    if ext == ".assay"
+        open(path, "w") do io
+            serialize(io, report)
+        end
+    elseif ext == ".json"
+        write(path, json_string(study_report_dict(report)))
+    elseif ext == ".md" || ext == ".markdown"
+        write(path, markdown_report(report))
+    elseif ext == ".html" || ext == ".htm"
+        write(path, html_report(report))
+    else
+        throw(
+            ArgumentError(
+                "Unsupported report extension '$ext'. Use .assay, .json, .md, or .html",
+            ),
+        )
+    end
+    path
+end
+
 """
     report(result, path)
 
@@ -38,47 +60,11 @@ function report(result::QualityReport)
 end
 
 function report(result::StudyReport)
-    io = IOBuffer()
-    println(io, "# AssaySentinel study report — ", result.name)
-    println(io)
-    println(io, "> ", result.safety_notice)
-    println(io)
-    println(io, "schema ", result.schema_version, "  package ", result.package_version)
-    println(io)
-    println(io, "## Hierarchical combine")
-    for e in result.hierarchy.evidence
-        println(io, "- ", e)
-    end
-    println(io)
-    println(io, "Attribution: `", result.hierarchy.attribution, "` (not causation)")
-    String(take!(io))
+    markdown_report(result)
 end
 
 function report(result::StudyReport, path::AbstractString)
-    ext = lowercase(splitext(path)[2])
-    if ext == ".md" || ext == ".markdown"
-        write(path, report(result))
-    elseif ext == ".json"
-        write(
-            path,
-            json_string(
-                Dict(
-                    "name" => result.name,
-                    "schema_version" => result.schema_version,
-                    "package_version" => result.package_version,
-                    "attribution" => string(result.hierarchy.attribution),
-                    "grand_mean" => result.hierarchy.grand_mean,
-                    "between_sd" => result.hierarchy.between_sd,
-                    "concordance" => result.hierarchy.concordance,
-                    "evidence" => result.hierarchy.evidence,
-                    "sites" => collect(keys(result.site_reports)),
-                ),
-            ),
-        )
-    else
-        throw(ArgumentError("StudyReport save supports .md and .json"))
-    end
-    path
+    save(result, path)
 end
 
 function load_report(path::AbstractString)
@@ -193,6 +179,42 @@ function report_dict(r::QualityReport)
     )
 end
 
+function study_report_dict(r::StudyReport)
+    h = r.hierarchy
+    Dict(
+        "name" => r.name,
+        "schema_version" => r.schema_version,
+        "package_version" => r.package_version,
+        "safety_notice" => r.safety_notice,
+        "attribution" => string(h.attribution),
+        "grand_mean" => h.grand_mean,
+        "between_sd" => h.between_sd,
+        "within_sd" => h.within_sd,
+        "i2" => h.i2,
+        "prediction_lo" => h.prediction_lo,
+        "prediction_hi" => h.prediction_hi,
+        "concordance" => h.concordance,
+        "heterogeneity_q" => h.heterogeneity_q,
+        "heterogeneity_p" => h.heterogeneity_p,
+        "evidence" => h.evidence,
+        "notes" => h.notes,
+        "sites" => [
+            Dict(
+                "site" => s.site,
+                "n" => s.n,
+                "raw_mean" => s.raw_mean,
+                "shrunk_mean" => s.shrunk_mean,
+                "raw_sd" => s.raw_sd,
+                "shrinkage" => s.shrinkage,
+                "se" => s.se,
+                "drift" => s.drift.detected,
+            ) for s in h.sites
+        ],
+        "site_reports" => collect(keys(r.site_reports)),
+        "reconstruction" => _reconstruction_dict(r.reconstruction),
+    )
+end
+
 function markdown_report(r::QualityReport)
     io = IOBuffer()
     println(io, "# AssaySentinel analytical report")
@@ -298,6 +320,85 @@ function markdown_report(r::QualityReport)
     String(take!(io))
 end
 
+function markdown_report(r::StudyReport)
+    io = IOBuffer()
+    h = r.hierarchy
+    println(io, "# AssaySentinel study report — ", r.name)
+    println(io)
+    println(io, "> ", r.safety_notice)
+    println(io)
+    println(io, "| Field | Value |")
+    println(io, "| --- | --- |")
+    println(io, "| Study | ", r.name, " |")
+    println(io, "| Attribution | ", h.attribution, " (not causation) |")
+    println(io, "| Sites | ", length(h.sites), " |")
+    println(io, "| Grand mean | ", h.grand_mean, " |")
+    println(io, "| Between-site τ | ", h.between_sd, " |")
+    println(io, "| Within-site σ | ", h.within_sd, " |")
+    println(io, "| I² | ", round(h.i2; digits = 1), "% |")
+    println(
+        io,
+        "| 95% prediction interval | ",
+        h.prediction_lo,
+        " – ",
+        h.prediction_hi,
+        " |",
+    )
+    println(io, "| Concordance | ", round(h.concordance; digits = 2), " |")
+    println(io, "| Schema | ", r.schema_version, " |")
+    println(io, "| Package | AssaySentinel.jl ", r.package_version, " |")
+    println(io)
+    if r.reconstruction !== nothing
+        rec = r.reconstruction
+        println(io, "## Reconstruction")
+        println(io)
+        println(io, "```")
+        println(io, rec.narrative)
+        println(io, "```")
+        println(io)
+        println(io, rec.uncertainty.notes)
+        println(io)
+    end
+    println(io, "## Sites")
+    println(io)
+    println(io, "| Site | n | Raw mean | Shrunk mean | SE | Shrinkage | Drift |")
+    println(io, "| --- | --- | --- | --- | --- | --- | --- |")
+    for s in h.sites
+        println(
+            io,
+            "| ",
+            s.site,
+            " | ",
+            s.n,
+            " | ",
+            round(s.raw_mean; digits = 4),
+            " | ",
+            round(s.shrunk_mean; digits = 4),
+            " | ",
+            round(s.se; digits = 4),
+            " | ",
+            round(s.shrinkage; digits = 2),
+            " | ",
+            s.drift.detected,
+            " |",
+        )
+    end
+    println(io)
+    println(io, "## Hierarchical combine")
+    for e in h.evidence
+        println(io, "- ", e)
+    end
+    println(io)
+    println(io, "## Limitations")
+    println(io, "- Temporal association across sites is not causation.")
+    println(
+        io,
+        "- I² and the prediction interval describe site-mean heterogeneity, not a clinical reference interval.",
+    )
+    println(io, "- Detection is not correction.")
+    String(take!(io))
+end
+
 function html_report(r::QualityReport)
     md = markdown_report(r)
     body = _md_to_html(md)
@@ -317,15 +418,43 @@ function html_report(r::QualityReport)
         <figure>$(c.provenance)</figure>
         """
     end
+    _html_document("AssaySentinel report — $(r.analyte)", body, figs)
+end
+
+function html_report(r::StudyReport)
+    md = markdown_report(r)
+    body = _md_to_html(md)
+    figs = ""
+    if r.reconstruction !== nothing
+        c = r.reconstruction.charts
+        extra = ""
+        if hasproperty(c, :sites) && c.sites isa AbstractDict
+            for k in sort(collect(keys(c.sites)))
+                extra *= "<h3>$(_esc(k))</h3>\n<figure>$(c.sites[k])</figure>\n"
+            end
+        end
+        forest = hasproperty(c, :forest) ? c.forest : c.control_chart
+        figs = """
+        <h2>Charts</h2>
+        <figure>$forest</figure>
+        <figure>$(c.timeline)</figure>
+        $extra
+        <figure>$(c.provenance)</figure>
+        """
+    end
+    _html_document("AssaySentinel study report — $(r.name)", body, figs)
+end
+
+function _html_document(title, body, figs)
     """
     <!DOCTYPE html>
     <html lang="en">
     <head>
     <meta charset="utf-8"/>
-    <title>AssaySentinel report — $(r.analyte)</title>
+    <title>$(_esc(string(title)))</title>
     <style>
       body { font-family: "Iowan Old Style", Georgia, serif; background:#f4f1ea; color:#1b2838; margin:2rem auto; max-width:860px; }
-      h1,h2 { font-family: "Avenir Next", "Segoe UI", sans-serif; color:#1b2838; }
+      h1,h2,h3 { font-family: "Avenir Next", "Segoe UI", sans-serif; color:#1b2838; }
       blockquote { border-left:4px solid #c9892a; padding-left:1rem; color:#2c3338; }
       table { border-collapse: collapse; width:100%; }
       th,td { border:1px solid #c5c0b5; padding:0.4rem 0.6rem; text-align:left; }
@@ -334,11 +463,13 @@ function html_report(r::QualityReport)
       pre { background:#e7e2d6; padding:0.8rem 1rem; overflow-x:auto; }
       figure { margin:1.2rem 0; }
       figure svg { width:100%; height:auto; display:block; }
+      ul { padding-left: 1.2rem; }
     </style>
     </head>
     <body>
     $body
     $figs
+    </body>
     </html>
     """
 end
@@ -347,8 +478,11 @@ function _md_to_html(md::AbstractString)
     io = IOBuffer()
     in_table = false
     in_pre = false
+    in_list = false
+    header_row = false
     for line in split(md, '\n')
         if startswith(line, "```")
+            in_list && (println(io, "</ul>"); in_list = false)
             if in_table
                 println(io, "</table>")
                 in_table = false
@@ -367,40 +501,56 @@ function _md_to_html(md::AbstractString)
             continue
         end
         if startswith(line, "# ")
+            in_list && (println(io, "</ul>"); in_list = false)
+            in_table && (println(io, "</table>"); in_table = false)
             println(io, "<h1>", _esc(line[3:end]), "</h1>")
         elseif startswith(line, "## ")
+            in_list && (println(io, "</ul>"); in_list = false)
+            in_table && (println(io, "</table>"); in_table = false)
             println(io, "<h2>", _esc(line[4:end]), "</h2>")
         elseif startswith(line, "> ")
+            in_list && (println(io, "</ul>"); in_list = false)
             println(io, "<blockquote>", _esc(line[3:end]), "</blockquote>")
         elseif startswith(line, "| ")
+            in_list && (println(io, "</ul>"); in_list = false)
             if !in_table
                 println(io, "<table>")
                 in_table = true
+                header_row = true
             end
             cells = split(strip(line, '|'), '|')
             if all(occursin(r"^[\s:-]+$", c) for c in cells)
                 continue
             end
-            tag =
-                occursin("Field", line) || occursin("Component", line) ||
-                occursin("Quantity", line) ? "th" : "td"
+            tag = header_row ? "th" : "td"
+            header_row = false
             print(io, "<tr>")
             for c in cells
                 print(io, "<", tag, ">", _esc(strip(c)), "</", tag, ">")
             end
             println(io, "</tr>")
+        elseif startswith(line, "- ")
+            in_table && (println(io, "</table>"); in_table = false)
+            if !in_list
+                println(io, "<ul>")
+                in_list = true
+            end
+            println(io, "<li>", _esc(line[3:end]), "</li>")
         else
             if in_table
                 println(io, "</table>")
                 in_table = false
             end
-            if startswith(line, "- ")
-                println(io, "<li>", _esc(line[3:end]), "</li>")
+            if in_list && isempty(strip(line))
+                println(io, "</ul>")
+                in_list = false
             elseif !isempty(strip(line))
+                in_list && (println(io, "</ul>"); in_list = false)
                 println(io, "<p>", _esc(line), "</p>")
             end
         end
     end
+    in_list && println(io, "</ul>")
     in_table && println(io, "</table>")
     in_pre && println(io, "</pre>")
     String(take!(io))

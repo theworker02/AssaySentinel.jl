@@ -252,3 +252,89 @@ function svg_group_chart(labels::AbstractVector, values::AbstractVector;
     println(io, "</svg>")
     String(take!(io))
 end
+
+"""
+    svg_forest_chart(result::HierarchicalSiteResult; title)
+
+Forest plot of per-site means with 95% CIs (raw SE), shrunk means as filled
+markers, a diamond at the grand mean, and dashed prediction-interval guides.
+"""
+function svg_forest_chart(result::HierarchicalSiteResult;
+    title = "Site forest (not causal)")
+    sites = result.sites
+    isempty(sites) && return "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"
+    W = 820.0
+    row = 28.0
+    padt, padb, padl, padr = 36.0, 40.0, 120.0, 24.0
+    H = padt + padb + row * length(sites)
+    xs = Float64[]
+    for s in sites
+        se = s.se > 0 && isfinite(s.se) ? s.se : 0.0
+        push!(xs, s.raw_mean - 1.96 * se, s.raw_mean + 1.96 * se, s.shrunk_mean)
+    end
+    push!(xs, result.grand_mean, result.prediction_lo, result.prediction_hi)
+    finite = filter(isfinite, xs)
+    xmin, xmax = extrema(isempty(finite) ? [0.0, 1.0] : finite)
+    xmin == xmax && (xmax = xmin + 1)
+    span = xmax - xmin
+    xmin -= 0.05 * span
+    xmax += 0.05 * span
+    mapx(x) = padl + (x - xmin) / (xmax - xmin) * (W - padl - padr)
+    io = IOBuffer()
+    println(
+        io,
+        """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $W $H" role="img" aria-label="$(_svg_esc(title))">""",
+    )
+    println(io, """<rect width="$W" height="$H" fill="$_CREAM"/>""")
+    println(
+        io,
+        """<text x="16" y="20" fill="$_NAVY" font-family="Segoe UI, sans-serif" font-size="13">$(_svg_esc(title))</text>""",
+    )
+    gx = mapx(result.grand_mean)
+    println(
+        io,
+        """<line x1="$gx" y1="$(padt - 6)" x2="$gx" y2="$(H - padb + 8)" stroke="$_NAVY" stroke-width="1.4"/>""",
+    )
+    for x in (result.prediction_lo, result.prediction_hi)
+        isfinite(x) || continue
+        xx = mapx(x)
+        println(
+            io,
+            """<line x1="$xx" y1="$(padt - 6)" x2="$xx" y2="$(H - padb + 8)" stroke="$_MUTED" stroke-width="1" stroke-dasharray="4 3"/>""",
+        )
+    end
+    for (i, s) in enumerate(sites)
+        y = padt + (i - 0.5) * row
+        se = s.se > 0 && isfinite(s.se) ? s.se : 0.0
+        xlo, xhi = mapx(s.raw_mean - 1.96 * se), mapx(s.raw_mean + 1.96 * se)
+        xr, xs_ = mapx(s.raw_mean), mapx(s.shrunk_mean)
+        println(
+            io,
+            """<text x="12" y="$(y + 4)" fill="$_NAVY" font-size="11" font-family="Segoe UI, sans-serif">$(_svg_esc(s.site))</text>""",
+        )
+        println(
+            io,
+            """<line x1="$xlo" y1="$y" x2="$xhi" y2="$y" stroke="$_TEAL" stroke-width="2"/>""",
+        )
+        println(
+            io,
+            """<circle cx="$xr" cy="$y" r="3.2" fill="none" stroke="$_NAVY" stroke-width="1.4"/>""",
+        )
+        println(
+            io,
+            """<rect x="$(xs_ - 4)" y="$(y - 4)" width="8" height="8" fill="$_AMBER"/>""",
+        )
+    end
+    gy = H - 18
+    gd = 10.0
+    println(
+        io,
+        """<polygon points="$(gx),$(gy - 6) $(gx + gd),$gy $(gx),$(gy + 6) $(gx - gd),$gy" fill="$_NAVY"/>""",
+    )
+    println(
+        io,
+        """<text x="16" y="$(H - 6)" fill="$_MUTED" font-size="10" font-family="Segoe UI, sans-serif">Open circles: raw mean ± 1.96 SE. Amber squares: EB-shrunk means. Diamond: grand mean. Dashed: 95% prediction interval. Not causation.</text>""",
+    )
+    println(io, "</svg>")
+    String(take!(io))
+end

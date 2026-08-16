@@ -52,7 +52,7 @@ export BatchEffectResult, ComparisonResult, DistributionComparison
 export AttributionResult, OutlierResult, PartitionResult
 export StoryBeat, Reconstruction, UncertaintyBudget
 export SiteEffect, HierarchicalSiteResult, StudyReport, StudySentinel
-export hierarchical_sites
+export hierarchical_sites, svg_forest_chart
 export SCHEMA_VERSION
 export API_STABLE_SINCE
 export AbstractDetector, AbstractEvent
@@ -80,8 +80,8 @@ export showcase_dataset
 export online_series
 export main
 
-const PACKAGE_VERSION = v"1.3.0"
-const SCHEMA_VERSION = v"1.3.0"
+const PACKAGE_VERSION = v"1.4.0"
+const SCHEMA_VERSION = v"1.4.0"
 const API_STABLE_SINCE = v"1.0.0"
 
 const SAFETY_NOTICE = """

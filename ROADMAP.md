@@ -1,23 +1,21 @@
 # Roadmap
 
-AssaySentinel 1.3.0 is the current published line. Later 1.x releases stay
+AssaySentinel 1.4.0 is the current development line. Later 1.x releases stay
 backward compatible with the public API frozen since 1.0.
 
-## v1.3.0 — current
+## v1.4.0 — current
 
-- Hierarchical multi-site monitoring (`hierarchical_sites`, `StudySentinel`, `StudyReport`)
-- Empirical-Bayes site shrinkage and study-level concordance alerts
-- Reference intervals: Box–Cox, Horn, LMS curves
-- Passing–Bablok confidence intervals; calibration diagnostics
-- Quantile / RUV-lite / multi-feature ComBat batch correction
-- Lot and instrument comparison charts (core SVG + Makie)
-- Turing.jl and OnlineStats.jl extensions; live Documenter (`docs/live.jl`)
+- Study reconstruction matching the single-stream path (forest plot, HTML/JSON/`.assay`)
+- Higgins I² and 95% prediction intervals on `hierarchical_sites`
+- StudySentinel concordance cooldown
+- CLI `study`
 
 ## Later
 
-- Stronger Turing models (multiple cuts, hierarchical site intercepts beyond the extension stub)
+- Stronger Turing models (multiple cuts; site intercepts already in the extension)
 - Independent validation notes beyond `VALIDATION.md`
 - General registry installation (`Pkg.add("AssaySentinel")`) after JuliaRegistrator
+- Optional Makie forest / multi-site overlay charts
 
 ## Compatibility freeze
 

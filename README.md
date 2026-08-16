@@ -137,6 +137,17 @@ result = analyze(
 )
 ```
 
+Multi-site histories go through the same reconstruction path:
+
+```julia
+srep = analyze(study, Dict("Lab-A" => stream_a, "Lab-B" => stream_b))
+explain(srep)
+report(srep, "study-report.html")  # forest plot + per-site charts
+```
+
+Sharing labels (`:global`, `:site_specific`, `:mixed`, `:stable`) and I²
+describe statistical concordance across sites, not a cause.
+
 <p align="center">
   <img src="assets/screenshot-report.png" alt="AssaySentinel HTML analytical report" width="720"/>
   <br/>

@@ -15,7 +15,7 @@ function main(args::Vector{String} = ARGS)
         return _cli_doctor()
     elseif cmd == "simulate"
         return _cli_simulate(rest, json_out)
-    elseif cmd in ("analyze", "drift", "batch", "reference", "compare", "report")
+    elseif cmd in ("analyze", "drift", "batch", "reference", "compare", "report", "study")
         isempty(rest) && (println(stderr, "error: $cmd requires a CSV path"); return 2)
         return _cli_file(cmd, rest[1], rest[2:end], json_out)
     else
@@ -36,6 +36,7 @@ function _cli_help()
       assaysentinel reference measurements.csv [--json]
       assaysentinel compare lots.csv [--json]
       assaysentinel report measurements.csv [out.md]
+      assaysentinel study measurements.csv [--json]
       assaysentinel simulate [--json]
       assaysentinel doctor
       assaysentinel version
@@ -110,6 +111,33 @@ function _cli_file(cmd, path, rest, json_out)
         json_out ?
         print(stdout, json_string(Dict("lots" => cmp.lots, "evidence" => cmp.evidence))) :
         foreach(println, cmp.evidence)
+        println()
+        return 0
+    elseif cmd == "study"
+        sitecol = _optional_col(table, (:site, :lab, :laboratory))
+        sitecol === nothing &&
+            (println(stderr, "error: study CSV needs a site column"); return 2)
+        streams = Dict{String, AssayStream}()
+        sites = Site[]
+        for r in table
+            s = string(getproperty(r, sitecol))
+            haskey(streams, s) && continue
+            sub = [row for row in table if string(getproperty(row, sitecol)) == s]
+            streams[s] = from_table(sub; analyte = :analyte, unit = "",
+                value = _value_col(table),
+                time = _time_col(table),
+                lot = _optional_col(table, (:reagent_lot, :lot)),
+                instrument = _optional_col(table, (:instrument,)),
+                batch = _optional_col(table, (:batch,)),
+                control = _optional_col(table, (:control,)))
+            streams[s].site = s
+            push!(sites, Site(s))
+        end
+        study = Study("cli-study"; sites)
+        report_ = analyze(study, streams; rng = Random.Xoshiro(1))
+        json_out ?
+        print(stdout, json_string(study_report_dict(report_))) :
+        (println(report_); println(); println(explain(report_)))
         println()
         return 0
     end
