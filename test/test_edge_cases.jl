@@ -47,7 +47,9 @@
 
     allnan = analyze([NaN, NaN, missing]; rng = Random.Xoshiro(1))
     @test allnan.n == 0
-    @test any(occursin("omitted", L) || occursin("Missing", L) for L in allnan.limitations) ||
+    @test any(
+        occursin("omitted", L) || occursin("Missing", L) for L in allnan.limitations
+    ) ||
           allnan.n == 0
 
     ties = detect_changes(fill(3.0, 40); method = :pelt)
