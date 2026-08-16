@@ -7,6 +7,21 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-16
+
+### Added
+
+- First-class `PanelReport`: `analyze(panel)` returns a reconstruction with per-analyte stories, a Sentinel Score chart, HTML/JSON/`.assay` reports, `explain`, and `reconstruct(panel)`
+- CLI `panel` for multi-analyte CSV files
+- Turing extension: `sampler=:nuts` (continuous-cut models), `ncuts` piecewise means with `model=:multiple`
+- Optional Makie `forest_chart` overlay for hierarchical site results (`svg_forest_chart` remains in core)
+
+### Fixed
+
+- Empty CSV files no longer crash the CLI
+- Empty, n=1, and all-NaN streams produce closed reports instead of throwing
+- `:bayesian` docs now match the Fearnhead product-partition implementation (multiple changes)
+
 ## [1.4.0] - 2026-08-15
 
 ### Added
@@ -71,7 +86,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - CLI (`analyze`, `drift`, `batch`, `reference`, `compare`, `report`, `simulate`, `doctor`, `version`)
 - Documentation, CI, and brand assets
 
-[Unreleased]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.4.0...HEAD
-[1.4.0]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/theworker02/AssaySentinel.jl/compare/ac0d5aa...HEAD
+[1.4.0]: https://github.com/theworker02/AssaySentinel.jl/compare/v1.3.0...ac0d5aa
 [1.3.0]: https://github.com/theworker02/AssaySentinel.jl/releases/tag/v1.3.0
 [0.1.0]: https://github.com/theworker02/AssaySentinel.jl/releases/tag/v0.1.0

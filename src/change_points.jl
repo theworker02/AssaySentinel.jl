@@ -12,7 +12,8 @@ Methods:
 - `:robust_median` — CUSUM on robustly standardized observations
 - `:rolling` — rolling two-sample Welch tests
 - `:bayesian` — Fearnhead (2006) product-partition posterior (multiple changes)
-- `:turing` — hierarchical MCMC via the Turing.jl extension
+- `:turing` — MCMC via the Turing.jl extension (`model=:single|:multiple|:hierarchical`,
+  `ncuts` for piecewise means, `sampler=:mh|:nuts`)
 - `:kernel` — energy-distance scan (Székely & Rizzo)
 - `:auto` — choose from sample size, tail weight, missingness, cadence
 """
@@ -21,6 +22,8 @@ function detect_changes(data::AbstractVector;
     timestamps = nothing,
     sites = nothing,
     model::Symbol = :single,
+    ncuts::Int = 2,
+    sampler::Symbol = :mh,
     has_controls::Bool = false,
     min_size::Int = 8,
     rng::AbstractRNG = Random.default_rng())
@@ -70,7 +73,8 @@ function detect_changes(data::AbstractVector;
     elseif chosen === :bayesian
         _cp_bayesian(vals)
     elseif chosen === :turing
-        _cp_turing(vals; rng, sites = isempty(sitekeep) ? nothing : sitekeep, model)
+        _cp_turing(vals; rng, sites = isempty(sitekeep) ? nothing : sitekeep,
+            model, ncuts, sampler)
     elseif chosen === :kernel
         _cp_kernel(vals)
     else
@@ -490,7 +494,8 @@ Hierarchical MCMC changepoint. Implemented by `AssaySentinelTuringExt`
 when Turing.jl is loaded; otherwise raises a clear load error.
 """
 function _cp_turing(x::Vector{Float64}; rng::AbstractRNG = Random.default_rng(),
-    sites = nothing, model::Symbol = :single, kwargs...)
+    sites = nothing, model::Symbol = :single, ncuts::Int = 2,
+    sampler::Symbol = :mh, kwargs...)
     throw(
         ArgumentError(
             "detect_changes(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`.",

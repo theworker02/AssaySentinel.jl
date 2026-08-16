@@ -906,3 +906,32 @@ struct StudyReport
     metadata::NamedTuple
     reconstruction::Union{Nothing, Reconstruction}
 end
+
+"""
+    PanelReport
+
+Frozen multi-analyte product: per-analyte `QualityReport`s plus a panel
+reconstruction. Schema version is stored for reload compatibility.
+
+`.panel` is an alias of `.name` so older `analyze(panel)` NamedTuple
+accessors keep working.
+"""
+struct PanelReport
+    name::String
+    reports::Dict{Symbol, QualityReport}
+    safety_notice::String
+    schema_version::String
+    package_version::String
+    metadata::NamedTuple
+    reconstruction::Union{Nothing, Reconstruction}
+end
+
+function Base.getproperty(r::PanelReport, s::Symbol)
+    s === :panel && return getfield(r, :name)
+    getfield(r, s)
+end
+
+function Base.propertynames(::PanelReport, ::Bool = false)
+    (:name, :reports, :safety_notice, :schema_version, :package_version,
+        :metadata, :reconstruction, :panel)
+end

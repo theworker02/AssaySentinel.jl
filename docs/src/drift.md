@@ -15,7 +15,8 @@ presence, then **reports the chosen method and why**.
 | `:pelt` | PELT piecewise mean [killick2012](@cite) |
 | `:robust_median` | MAD-standardized CUSUM |
 | `:rolling` | Welch window scan |
-| `:bayesian` | Offline single-change posterior |
+| `:bayesian` | Fearnhead product-partition posterior (multiple changes) [fearnhead2006](@cite) |
+| `:turing` | Optional Turing.jl MCMC (`sampler=:mh` or `:nuts`; `model=:multiple` with `ncuts`) |
 | `:kernel` | Energy-distance scan [szekely2013](@cite) |
 
 Drift kinds: linear (Theil–Sen), sudden, variance (Inclán–Tiao [inclan1994](@cite)),

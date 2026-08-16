@@ -10,6 +10,7 @@ using AssaySentinel, Makie
 levey_jennings(values, QCSpec(100.0, 2.0))
 lot_chart(rows; lot=:lot, value=:value)
 instrument_chart(rows; instrument=:instrument, value=:value)
+forest_chart(hierarchical_sites(values, sites))
 ```
 
 ## Unitful / Measurements
@@ -22,12 +23,14 @@ unwrap those types at the boundary.
 ## Turing
 
 `detect_changes(x; method=:turing)` runs a hierarchical Gaussian
-changepoint model (discrete cut, two means, shared scale) with
-Metropolis–Hastings and reports the posterior mode plus a 90% interval.
+changepoint model. Default `sampler=:mh` uses a discrete cut.
+`sampler=:nuts` uses a continuous cut so Hamiltonian Monte Carlo can run.
+`model=:multiple` with `ncuts` fits more than two piecewise means.
 
 ```julia
 using AssaySentinel, Turing
 detect_changes(values; method=:turing, rng=Xoshiro(1))
+detect_changes(values; method=:turing, model=:multiple, ncuts=3, sampler=:nuts)
 ```
 
 The default `:bayesian` method does **not** need Turing. It is the

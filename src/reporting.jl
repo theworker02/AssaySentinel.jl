@@ -24,6 +24,28 @@ function save(report::QualityReport, path::AbstractString)
     path
 end
 
+function save(report::PanelReport, path::AbstractString)
+    ext = lowercase(splitext(path)[2])
+    if ext == ".assay"
+        open(path, "w") do io
+            serialize(io, report)
+        end
+    elseif ext == ".json"
+        write(path, json_string(panel_report_dict(report)))
+    elseif ext == ".md" || ext == ".markdown"
+        write(path, markdown_report(report))
+    elseif ext == ".html" || ext == ".htm"
+        write(path, html_report(report))
+    else
+        throw(
+            ArgumentError(
+                "Unsupported report extension '$ext'. Use .assay, .json, .md, or .html",
+            ),
+        )
+    end
+    path
+end
+
 function save(report::StudyReport, path::AbstractString)
     ext = lowercase(splitext(path)[2])
     if ext == ".assay"
@@ -64,6 +86,14 @@ function report(result::StudyReport)
 end
 
 function report(result::StudyReport, path::AbstractString)
+    save(result, path)
+end
+
+function report(result::PanelReport)
+    markdown_report(result)
+end
+
+function report(result::PanelReport, path::AbstractString)
     save(result, path)
 end
 
@@ -211,6 +241,30 @@ function study_report_dict(r::StudyReport)
             ) for s in h.sites
         ],
         "site_reports" => collect(keys(r.site_reports)),
+        "reconstruction" => _reconstruction_dict(r.reconstruction),
+    )
+end
+
+function panel_report_dict(r::PanelReport)
+    Dict(
+        "kind" => "panel",
+        "name" => r.name,
+        "schema_version" => r.schema_version,
+        "package_version" => r.package_version,
+        "safety_notice" => r.safety_notice,
+        "n_analytes" => length(r.reports),
+        "worst_status" => string(_worst_status(r.reports)),
+        "analytes" => [
+            Dict(
+                "analyte" => string(k),
+                "status" => string(v.status),
+                "status_label" => _status_label(v.status),
+                "score" => v.score.value,
+                "n" => v.n,
+                "unit" => v.unit,
+                "drift" => v.drift.detected,
+            ) for (k, v) in sort(collect(r.reports); by = x -> string(x[1]))
+        ],
         "reconstruction" => _reconstruction_dict(r.reconstruction),
     )
 end
@@ -399,6 +453,62 @@ function markdown_report(r::StudyReport)
     String(take!(io))
 end
 
+function markdown_report(r::PanelReport)
+    io = IOBuffer()
+    println(io, "# AssaySentinel panel report — ", r.name)
+    println(io)
+    println(io, "> ", r.safety_notice)
+    println(io)
+    println(io, "| Field | Value |")
+    println(io, "| --- | --- |")
+    println(io, "| Panel | ", r.name, " |")
+    println(io, "| Analytes | ", length(r.reports), " |")
+    println(io, "| Worst status | ", _status_label(_worst_status(r.reports)), " |")
+    println(io, "| Schema | ", r.schema_version, " |")
+    println(io, "| Package | AssaySentinel.jl ", r.package_version, " |")
+    println(io)
+    if r.reconstruction !== nothing
+        rec = r.reconstruction
+        println(io, "## Reconstruction")
+        println(io)
+        println(io, "```")
+        println(io, rec.narrative)
+        println(io, "```")
+        println(io)
+        println(io, rec.uncertainty.notes)
+        println(io)
+    end
+    println(io, "## Analytes")
+    println(io)
+    println(io, "| Analyte | n | Unit | Status | Score | Drift |")
+    println(io, "| --- | --- | --- | --- | --- | --- |")
+    for (k, v) in sort(collect(r.reports); by = x -> string(x[1]))
+        println(
+            io,
+            "| ",
+            k,
+            " | ",
+            v.n,
+            " | ",
+            v.unit,
+            " | ",
+            _status_label(v.status),
+            " | ",
+            round(v.score.value; digits = 1),
+            " | ",
+            v.drift.detected,
+            " |",
+        )
+    end
+    println(io)
+    println(io, "## Limitations")
+    println(io, "- Panel summary is not a diagnosis.")
+    println(io, "- Units are never pooled across analytes.")
+    println(io, "- Detection is not correction.")
+    println(io, "- Temporal association is not causation.")
+    String(take!(io))
+end
+
 function html_report(r::QualityReport)
     md = markdown_report(r)
     body = _md_to_html(md)
@@ -443,6 +553,30 @@ function html_report(r::StudyReport)
         """
     end
     _html_document("AssaySentinel study report — $(r.name)", body, figs)
+end
+
+function html_report(r::PanelReport)
+    md = markdown_report(r)
+    body = _md_to_html(md)
+    figs = ""
+    if r.reconstruction !== nothing
+        c = r.reconstruction.charts
+        extra = ""
+        if hasproperty(c, :analytes) && c.analytes isa AbstractDict
+            for k in sort(collect(keys(c.analytes)))
+                extra *= "<h3>$(_esc(k))</h3>\n<figure>$(c.analytes[k])</figure>\n"
+            end
+        end
+        panelfig = hasproperty(c, :panel) ? c.panel : c.control_chart
+        figs = """
+        <h2>Charts</h2>
+        <figure>$panelfig</figure>
+        <figure>$(c.timeline)</figure>
+        $extra
+        <figure>$(c.provenance)</figure>
+        """
+    end
+    _html_document("AssaySentinel panel report — $(r.name)", body, figs)
 end
 
 function _html_document(title, body, figs)

@@ -399,3 +399,177 @@ function reconstruct(
 )
     analyze(study, streams; rng, kwargs...).reconstruction
 end
+
+function _worst_status(reports)
+    rank = Dict(
+        :stable => 1,
+        :info => 1,
+        :watch => 2,
+        :warning => 3,
+        :drift_suspected => 4,
+        :critical => 5,
+    )
+    worst = :stable
+    w = 0
+    for r in values(reports)
+        r isa QualityReport || continue
+        s = get(rank, r.status, 2)
+        if s > w
+            w = s
+            worst = r.status
+        end
+    end
+    worst
+end
+
+"""
+    reconstruct(reports; rng_seed, name)
+
+Panel-level reconstruction: per-analyte status narrative, score chart,
+and provenance. Called by `analyze(panel)`. Units are never pooled.
+"""
+function reconstruct(reports::Dict{Symbol, QualityReport};
+    rng_seed = nothing,
+    name::AbstractString = "panel")
+    beats = StoryBeat[]
+    push!(
+        beats,
+        StoryBeat("Panel ingest", :stable, nothing, nothing, :observed,
+            "Panel $name: $(length(reports)) analyte(s). Missing/NaN omitted, not zero-filled. Units are not pooled.",
+        ),
+    )
+    for k in sort(collect(keys(reports)); by = string)
+        r = reports[k]
+        if r.drift.detected
+            push!(
+                beats,
+                StoryBeat("$(k) drift", :drift, r.drift.start_time,
+                    r.drift.start_index, :algorithmic,
+                    join(r.drift.evidence, " ")),
+            )
+        elseif r.change_points.detected
+            push!(
+                beats,
+                StoryBeat("$(k) change-point", :changepoint,
+                    isempty(r.change_points.timestamps) ? nothing :
+                    r.change_points.timestamps[1],
+                    isempty(r.change_points.indices) ? nothing :
+                    r.change_points.indices[1],
+                    :algorithmic, r.change_points.selection_reason),
+            )
+        elseif r.status === :stable
+            push!(
+                beats,
+                StoryBeat("$(k) stable", :stable, nothing, nothing, :statistical,
+                    "No detector exceeded its threshold for $k."),
+            )
+        else
+            push!(
+                beats,
+                StoryBeat("$k $(_status_label(r.status))", :qc, nothing, nothing,
+                    :algorithmic, join(r.evidence[1:min(end, 2)], " ")),
+            )
+        end
+    end
+    worst = _worst_status(reports)
+    push!(
+        beats,
+        StoryBeat(
+            worst === :stable ? "Panel statistically stable" :
+            "Panel worst status $(_status_label(worst))",
+            worst === :stable ? :stable : :qc,
+            nothing, nothing, :algorithmic,
+            "Worst analyte status :$worst. Panel summary is not a diagnosis. Detection is not correction.",
+        ),
+    )
+    n_unc = 0
+    sds = Float64[]
+    same_unit = true
+    unit0 = nothing
+    for r in values(reports)
+        if r.reconstruction !== nothing
+            n_unc += r.reconstruction.uncertainty.n_with_uncertainty
+            push!(sds, r.reconstruction.uncertainty.analytical_sd)
+        end
+        if unit0 === nothing
+            unit0 = r.unit
+        elseif r.unit != unit0
+            same_unit = false
+        end
+    end
+    pooled_sd = same_unit && !isempty(sds) ? sqrt(mean(sds .^ 2)) : NaN
+    ub = UncertaintyBudget(
+        n_unc,
+        nothing,
+        pooled_sd,
+        pooled_sd,
+        nothing,
+        NaN,
+        same_unit ?
+        "RMS of per-analyte analytical SDs (same unit). Not a clinical interval. Detection is not correction." :
+        "Analytes use different units; combined SD is not pooled (NaN). See per-analyte reports. Detection is not correction.",
+    )
+    prov = ProvenanceRecord[]
+    p0 = record_step!(prov;
+        operation = :ingest, func = "analyze",
+        parameters = Dict("n_analytes" => length(reports), "name" => string(name)),
+        input_fingerprint = fingerprint(string(name, length(reports))),
+        rng_seed = rng_seed,
+        notes = "Per-analyte streams ingested for panel reconstruction.",
+        statement_kind = :observed)
+    record_step!(prov;
+        operation = :reconstruct, func = "reconstruct",
+        parameters = Dict("kind" => "panel", "worst" => string(worst)),
+        parent_ids = [p0.id],
+        rng_seed = rng_seed,
+        notes = "Panel reconstruction with analyte status chart.",
+        statement_kind = :algorithmic)
+    g = provenance_graph(prov)
+    analyte_charts = Dict{String, String}()
+    for (k, r) in reports
+        if r.reconstruction !== nothing
+            analyte_charts[string(k)] = r.reconstruction.charts.control_chart
+        end
+    end
+    charts = (
+        timeline = svg_timeline(beats),
+        panel = svg_panel_chart(reports),
+        provenance = svg_provenance(prov),
+        control_chart = svg_panel_chart(reports),
+        lots = "",
+        instruments = "",
+        analytes = analyte_charts,
+    )
+    fps = join(
+        sort([
+            string(k) * ":" * r.reconstruction.input_fingerprint
+            for (k, r) in reports if r.reconstruction !== nothing
+        ]),
+        "|",
+    )
+    Reconstruction(
+        beats,
+        _narrative(beats),
+        ub,
+        nothing,
+        nothing,
+        charts,
+        (; nodes = [(string(n[1]), string(n[2]), string(n[3])) for n in g.nodes],
+            edges = [(string(a), string(b)) for (a, b) in g.edges]),
+        rng_seed === nothing ? nothing : UInt64(rng_seed),
+        fingerprint(isempty(fps) ? string(name) : fps),
+        string(PACKAGE_VERSION),
+    )
+end
+
+function reconstruct(r::PanelReport)
+    r.reconstruction
+end
+
+function reconstruct(
+    panel::AssayPanel;
+    rng::AbstractRNG = Random.default_rng(),
+    kwargs...,
+)
+    analyze(panel; rng, kwargs...).reconstruction
+end

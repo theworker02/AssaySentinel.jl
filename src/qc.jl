@@ -278,6 +278,15 @@ Makie instrument comparison chart. Requires the optional Makie.jl extension.
 """
 function instrument_chart end
 
+"""
+    forest_chart(result::HierarchicalSiteResult)
+
+Makie forest plot of site means with a prediction-interval overlay.
+Requires the optional Makie.jl extension. The SVG counterpart
+`svg_forest_chart` is always available in core.
+"""
+function forest_chart end
+
 function levey_jennings_data(control::ControlSample, measurements; kwargs...)
     vals =
         eltype(measurements) <: Measurement ? [m.value for m in measurements] : measurements

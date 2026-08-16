@@ -22,6 +22,7 @@ function hierarchical_sites(data;
     value = :value,
     timestamps = :timestamp,
     method::Symbol = :eb,
+    sampler::Symbol = :mh,
     rng::AbstractRNG = Random.default_rng())
     rows = collect(_table_rows(data))
     sites = String[]
@@ -40,12 +41,13 @@ function hierarchical_sites(data;
             t === nothing || t isa Missing ? DateTime(2020, 1, 1) + Hour(i) : DateTime(t),
         )
     end
-    hierarchical_sites(vals, sites; timestamps = ts, method, rng)
+    hierarchical_sites(vals, sites; timestamps = ts, method, sampler, rng)
 end
 
 function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     timestamps = nothing,
     method::Symbol = :eb,
+    sampler::Symbol = :mh,
     rng::AbstractRNG = Random.default_rng())
     length(values) == length(sites) ||
         throw(ArgumentError("values and sites must have the same length"))
@@ -70,7 +72,7 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     uniq = sort(unique(labs))
     length(uniq) < 2 && throw(ArgumentError("hierarchical_sites needs at least two sites"))
 
-    method === :turing && return _turing_hierarchical_sites(vals, labs, ts, uniq; rng)
+    method === :turing && return _turing_hierarchical_sites(vals, labs, ts, uniq; rng, sampler)
 
     groups = [vals[labs .== s] for s in uniq]
     times = [ts[labs .== s] for s in uniq]
@@ -199,7 +201,7 @@ function _chi2_sf(q, ν)
     normal_sf(z)
 end
 
-function _turing_hierarchical_sites(vals, labs, ts, uniq; rng)
+function _turing_hierarchical_sites(vals, labs, ts, uniq; rng, sampler::Symbol = :mh)
     throw(
         ArgumentError(
             "hierarchical_sites(...; method=:turing) requires Turing.jl. Add Turing and run `using Turing`.",

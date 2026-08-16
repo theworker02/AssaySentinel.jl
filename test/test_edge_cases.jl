@@ -34,4 +34,25 @@
     @test length(stream) == 1
 
     @test AssaySentinel.convert_unit(1.0, "g/L", "mg/dL") == 100
+
+    empty = analyze(Float64[]; rng = Random.Xoshiro(1))
+    @test empty.n == 0
+    @test empty.reconstruction !== nothing
+    html0 = AssaySentinel.html_report(empty)
+    @test occursin("</body>", html0)
+
+    one = analyze([42.0]; rng = Random.Xoshiro(1))
+    @test one.n == 1
+    @test !one.drift.detected
+
+    allnan = analyze([NaN, NaN, missing]; rng = Random.Xoshiro(1))
+    @test allnan.n == 0
+    @test any(occursin("omitted", L) || occursin("Missing", L) for L in allnan.limitations) ||
+          allnan.n == 0
+
+    ties = detect_changes(fill(3.0, 40); method = :pelt)
+    @test ties isa ChangePointResult
+    @test !any(isnan, ties.confidence)
+
+    @test_throws ArgumentError detect_changes(randn(20); method = :not_a_method)
 end

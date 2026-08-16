@@ -21,8 +21,11 @@ each method.
   prior; Gaussian observations with known variance and a weak conjugate
   prior on the segment mean. Forward–backward smoothing gives a posterior
   mass at every index; MAP segmentation can report multiple changes.
-- **Turing (extension).** Hierarchical Gaussian changepoint sampled with
-  Metropolis–Hastings when Turing.jl is loaded (`method=:turing`).
+- **Turing (extension).** Gaussian changepoint sampled with Metropolis–Hastings
+  or NUTS when Turing.jl is loaded (`method=:turing`). Discrete cuts use MH;
+  `sampler=:nuts` uses a continuous cut. `model=:multiple` with `ncuts` fits
+  more than two piecewise means. Hierarchical site intercepts remain available
+  via `hierarchical_sites(...; method=:turing)`.
 - **`:auto`.** Chooses among robust CUSUM, likelihood, Fearnhead, and PELT
   using n, tails, missingness, cadence, control-like series, and the number
   of sequential CUSUM crossings (multiple crossings → PELT).

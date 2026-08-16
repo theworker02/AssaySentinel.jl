@@ -6,7 +6,7 @@ using Statistics
 using Turing
 
 """
-Single-cut hierarchical Gaussian changepoint.
+Single-cut hierarchical Gaussian changepoint (discrete τ; MH).
 """
 @model function _assay_changepoint(x, μ0, σ0)
     n = length(x)
@@ -16,6 +16,21 @@ Single-cut hierarchical Gaussian changepoint.
     σ ~ truncated(Normal(σ0, σ0 + 0.1), 1e-6, Inf)
     for i in 1:n
         x[i] ~ Normal(i <= τ ? μ1 : μ2, σ)
+    end
+end
+
+"""
+Continuous single cut in (1.5, n-0.5) so NUTS can run.
+"""
+@model function _assay_changepoint_cont(x, μ0, σ0)
+    n = length(x)
+    u ~ Uniform(0, 1)
+    μ1 ~ Normal(μ0, 2 * σ0 + 0.1)
+    μ2 ~ Normal(μ0, 2 * σ0 + 0.1)
+    σ ~ truncated(Normal(σ0, σ0 + 0.1), 1e-6, Inf)
+    cut = 1.5 + (n - 2.0) * u
+    for i in 1:n
+        x[i] ~ Normal(i <= cut ? μ1 : μ2, σ)
     end
 end
 
@@ -42,6 +57,27 @@ Two-cut model: three piecewise means, unordered discrete cuts (then sorted).
 end
 
 """
+k ordered continuous cuts via unsorted Uniforms (NUTS-safe).
+"""
+@model function _assay_k_changepoint(x, μ0, σ0, k)
+    n = length(x)
+    u ~ filldist(Uniform(0, 1), k)
+    μseg ~ filldist(Normal(μ0, 2 * σ0 + 0.1), k + 1)
+    σ ~ truncated(Normal(σ0, σ0 + 0.1), 1e-6, Inf)
+    su = sort(u)
+    cuts = 1.5 .+ (n - 2.0) .* su
+    for i in 1:n
+        seg = 1
+        for j in 1:k
+            if Float64(i) > cuts[j]
+                seg = j + 1
+            end
+        end
+        x[i] ~ Normal(μseg[seg], σ)
+    end
+end
+
+"""
 Site intercepts α_s ~ N(0, τ), shared residual σ, optional shared mean shift after τ.
 """
 @model function _assay_hierarchical_sites(y, sid, nsites, μ0, σ0)
@@ -60,8 +96,36 @@ Site intercepts α_s ~ N(0, τ), shared residual σ, optional shared mean shift 
     end
 end
 
-function _mh(model, samples, rng)
-    Turing.sample(model, Turing.MH(), samples; progress = false, rng)
+@model function _assay_hierarchical_sites_cont(y, sid, nsites, μ0, σ0)
+    n = length(y)
+    μ ~ Normal(μ0, 2 * σ0 + 0.1)
+    τ ~ truncated(Normal(0, σ0 + 0.1), 1e-6, Inf)
+    σ ~ truncated(Normal(σ0, σ0 + 0.1), 1e-6, Inf)
+    δ ~ Normal(0, 2 * σ0 + 0.1)
+    u ~ Uniform(0, 1)
+    α = Vector{Float64}(undef, nsites)
+    for s in 1:nsites
+        α[s] ~ Normal(0, τ)
+    end
+    cut = 1.5 + (n - 2.0) * u
+    for i in 1:n
+        y[i] ~ Normal(μ + α[sid[i]] + (i > cut ? δ : 0.0), σ)
+    end
+end
+
+function _sample(model, samples, rng, sampler::Symbol)
+    used = sampler
+    chn = try
+        if sampler === :nuts
+            Turing.sample(model, Turing.NUTS(0.8), samples; progress = false, rng)
+        else
+            Turing.sample(model, Turing.MH(), samples; progress = false, rng)
+        end
+    catch
+        used = :mh
+        Turing.sample(model, Turing.MH(), samples; progress = false, rng)
+    end
+    chn, used
 end
 
 function AssaySentinel._cp_turing(x::Vector{Float64};
@@ -69,6 +133,8 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
     sites = nothing,
     model::Symbol = :single,
     samples::Int = 400,
+    sampler::Symbol = :mh,
+    ncuts::Int = 2,
     kwargs...)
     n = length(x)
     n < 8 && return (detected = false, indices = Int[], statistic = 0.0,
@@ -78,30 +144,24 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
     μ0 = mean(x)
     σ0 = std(x)
     σ0 = σ0 > 0 && isfinite(σ0) ? σ0 : 1.0
+    kreq = clamp(Int(ncuts), 1, min(8, max(1, n ÷ 10)))
     if model === :hierarchical && sites !== nothing && length(unique(sites)) >= 2
-        return _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng)
+        return _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng, sampler)
     elseif model === :multiple || model === :two
-        chn = _mh(_assay_two_changepoint(x, μ0, σ0), samples, rng)
-        a = Int.(vec(Array(chn[:u1])))
-        b = Int.(vec(Array(chn[:u2])))
-        cuts = [minmax(a[i], b[i]) for i in eachindex(a)]
-        left = [c[1] for c in cuts]
-        right = [c[2] for c in cuts]
-        mode1 = _mode_int(left, n)
-        mode2 = _mode_int(right, n)
-        indices = unique(filter(i -> 1 < i < n, [mode1, mode2]))
-        conf = max(_mass_at(left, mode1), _mass_at(right, mode2))
-        ev = [
-            "Turing two-cut MH modes at $(join(indices, ", ")) (P=$(round(conf; digits=3))).",
-        ]
-        return (detected = !isempty(indices) && conf >= 0.06, indices,
-            statistic = conf, confidence = conf, evidence = ev,
-            details = (; model = :multiple, samples, sampler = :mh,
-                interval_90_first = _q90(left),
-                interval_90_second = _q90(right)))
+        return _turing_k_cuts(x, μ0, σ0, max(kreq, 2), samples, rng, sampler)
     end
-    chn = _mh(_assay_changepoint(x, μ0, σ0), samples, rng)
-    τs = Int.(vec(Array(chn[:τ])))
+    return _turing_single(x, μ0, σ0, n, samples, rng, sampler)
+end
+
+function _turing_single(x, μ0, σ0, n, samples, rng, sampler)
+    if sampler === :nuts
+        chn, used = _sample(_assay_changepoint_cont(x, μ0, σ0), samples, rng, :nuts)
+        us = vec(Array(chn[:u]))
+        τs = [clamp(round(Int, 1.5 + (n - 2.0) * u), 2, n - 1) for u in us]
+    else
+        chn, used = _sample(_assay_changepoint(x, μ0, σ0), samples, rng, :mh)
+        τs = Int.(vec(Array(chn[:τ])))
+    end
     post = zeros(n)
     for t in τs
         1 <= t <= n && (post[t] += 1)
@@ -112,7 +172,7 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
     qs = _q90(τs)
     detected = conf >= 0.08
     ev = [
-        "Turing MH posterior mode at $mode (P=$(round(conf; digits=3)); 90% interval $(qs[1])–$(qs[3])).",
+        "Turing $(used) posterior mode at $mode (P=$(round(conf; digits=3)); 90% interval $(qs[1])–$(qs[3])).",
     ]
     (
         detected = detected,
@@ -121,22 +181,94 @@ function AssaySentinel._cp_turing(x::Vector{Float64};
         confidence = conf,
         evidence = ev,
         details = (; posterior_mode = mode, posterior_mass = conf,
-            interval_90 = qs, samples, sampler = :mh, model = :single),
+            interval_90 = qs, samples, sampler = used, model = :single),
+    )
+end
+
+function _turing_k_cuts(x, μ0, σ0, k, samples, rng, sampler)
+    n = length(x)
+    if sampler === :mh && k == 2
+        chn, used = _sample(_assay_two_changepoint(x, μ0, σ0), samples, rng, :mh)
+        a = Int.(vec(Array(chn[:u1])))
+        b = Int.(vec(Array(chn[:u2])))
+        left = [min(a[i], b[i]) for i in eachindex(a)]
+        right = [max(a[i], b[i]) for i in eachindex(a)]
+        mode1 = _mode_int(left, n)
+        mode2 = _mode_int(right, n)
+        indices = unique(filter(i -> 1 < i < n, [mode1, mode2]))
+        conf = max(_mass_at(left, mode1), _mass_at(right, mode2))
+        ev = [
+            "Turing two-cut $(used) modes at $(join(indices, ", ")) (P=$(round(conf; digits=3))).",
+        ]
+        return (detected = !isempty(indices) && conf >= 0.06, indices,
+            statistic = conf, confidence = conf, evidence = ev,
+            details = (; model = :multiple, ncuts = 2, samples, sampler = used,
+                interval_90_first = _q90(left),
+                interval_90_second = _q90(right)))
+    end
+    chn, used = _sample(_assay_k_changepoint(x, μ0, σ0, k), samples, rng, sampler)
+    U = Array(chn[:u])
+    # U is samples × k or k × samples depending on Turing version
+    if ndims(U) == 1
+        U = reshape(U, :, 1)
+    end
+    if size(U, 2) != k && size(U, 1) == k
+        U = permutedims(U)
+    end
+    cutmat = Matrix{Int}(undef, size(U, 1), k)
+    for i in 1:size(U, 1)
+        su = sort(U[i, :])
+        for j in 1:k
+            cutmat[i, j] = clamp(round(Int, 1.5 + (n - 2.0) * su[j]), 2, n - 1)
+        end
+    end
+    indices = Int[]
+    confs = Float64[]
+    for j in 1:k
+        col = cutmat[:, j]
+        m = _mode_int(col, n)
+        push!(indices, m)
+        push!(confs, _mass_at(col, m))
+    end
+    indices = unique(filter(i -> 1 < i < n, indices))
+    conf = isempty(confs) ? 0.0 : maximum(confs)
+    ev = [
+        "Turing $(k)-cut $(used) modes at $(join(indices, ", ")) (P=$(round(conf; digits=3))).",
+    ]
+    (
+        detected = !isempty(indices) && conf >= 0.06,
+        indices,
+        statistic = conf,
+        confidence = conf,
+        evidence = ev,
+        details = (; model = :multiple, ncuts = k, samples, sampler = used),
     )
 end
 
 function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
-    samples::Int = 400)
+    samples::Int = 400, sampler::Symbol = :mh)
     μ0 = mean(vals)
     σ0 = std(vals)
     σ0 = σ0 > 0 && isfinite(σ0) ? σ0 : 1.0
     sid = [findfirst(==(s), uniq) for s in labs]
-    chn = _mh(_assay_hierarchical_sites(vals, sid, length(uniq), μ0, σ0), samples, rng)
-    cuts = Int.(vec(Array(chn[:cut])))
+    n = length(vals)
+    if sampler === :nuts
+        chn, used = _sample(
+            _assay_hierarchical_sites_cont(vals, sid, length(uniq), μ0, σ0),
+            samples, rng, :nuts)
+        us = vec(Array(chn[:u]))
+        cuts = [clamp(round(Int, 1.5 + (n - 2.0) * u), 2, n - 1) for u in us]
+    else
+        chn, used = _sample(
+            _assay_hierarchical_sites(vals, sid, length(uniq), μ0, σ0),
+            samples, rng, :mh)
+        cuts = Int.(vec(Array(chn[:cut])))
+        used = :mh
+    end
     δs = vec(Array(chn[:δ]))
     μs = vec(Array(chn[:μ]))
     τs = vec(Array(chn[:τ]))
-    mode = _mode_int(cuts, length(vals))
+    mode = _mode_int(cuts, n)
     conf = _mass_at(cuts, mode)
     global_d = AssaySentinel.DriftResult(;
         detected = abs(mean(δs)) > 0.15 * σ0,
@@ -147,11 +279,10 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
         detector = :turing,
         kind = :hierarchical,
         evidence = [
-            "Turing hierarchical site model: shared cut mode $mode, E[δ]=$(round(mean(δs); digits=3)).",
+            "Turing hierarchical site model ($used): shared cut mode $mode, E[δ]=$(round(mean(δs); digits=3)).",
         ],
-        details = (; interval_90 = _q90(cuts), tau = mean(τs), samples),
+        details = (; interval_90 = _q90(cuts), tau = mean(τs), samples, sampler = used),
     )
-    # Reuse EB location shrinkage for site table; attach global Turing drift
     eb = AssaySentinel.hierarchical_sites(vals, labs; timestamps = ts, method = :eb, rng)
     AssaySentinel.HierarchicalSiteResult(
         eb.sites, mean(μs), mean(τs), eb.within_sd, global_d,
@@ -163,25 +294,37 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
         (;
             method = :turing,
             samples,
+            sampler = used,
             schema_version = string(AssaySentinel.SCHEMA_VERSION),
         ),
     )
 end
 
-function _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng)
+function _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng, sampler)
     uniq = sort(unique(sites))
     sid = [findfirst(==(s), uniq) for s in sites]
-    chn = _mh(_assay_hierarchical_sites(x, sid, length(uniq), μ0, σ0), samples, rng)
-    cuts = Int.(vec(Array(chn[:cut])))
-    mode = _mode_int(cuts, length(x))
+    n = length(x)
+    if sampler === :nuts
+        chn, used = _sample(
+            _assay_hierarchical_sites_cont(x, sid, length(uniq), μ0, σ0),
+            samples, rng, :nuts)
+        us = vec(Array(chn[:u]))
+        cuts = [clamp(round(Int, 1.5 + (n - 2.0) * u), 2, n - 1) for u in us]
+    else
+        chn, used = _sample(
+            _assay_hierarchical_sites(x, sid, length(uniq), μ0, σ0),
+            samples, rng, :mh)
+        cuts = Int.(vec(Array(chn[:cut])))
+    end
+    mode = _mode_int(cuts, n)
     conf = _mass_at(cuts, mode)
     ev = [
-        "Turing hierarchical-site MH cut mode at $mode (P=$(round(conf; digits=3)); k=$(length(uniq)) sites).",
+        "Turing hierarchical-site $(used) cut mode at $mode (P=$(round(conf; digits=3)); k=$(length(uniq)) sites).",
     ]
     (detected = conf >= 0.08, indices = [mode], statistic = conf, confidence = conf,
         evidence = ev,
         details = (; model = :hierarchical, samples, n_sites = length(uniq),
-            interval_90 = _q90(cuts)))
+            sampler = used, interval_90 = _q90(cuts)))
 end
 
 _mode_int(xs, n) = begin

@@ -15,7 +15,7 @@ function main(args::Vector{String} = ARGS)
         return _cli_doctor()
     elseif cmd == "simulate"
         return _cli_simulate(rest, json_out)
-    elseif cmd in ("analyze", "drift", "batch", "reference", "compare", "report", "study")
+    elseif cmd in ("analyze", "drift", "batch", "reference", "compare", "report", "study", "panel")
         isempty(rest) && (println(stderr, "error: $cmd requires a CSV path"); return 2)
         return _cli_file(cmd, rest[1], rest[2:end], json_out)
     else
@@ -37,6 +37,7 @@ function _cli_help()
       assaysentinel compare lots.csv [--json]
       assaysentinel report measurements.csv [out.md]
       assaysentinel study measurements.csv [--json]
+      assaysentinel panel measurements.csv [--json]
       assaysentinel simulate [--json]
       assaysentinel doctor
       assaysentinel version
@@ -78,6 +79,7 @@ end
 function _cli_file(cmd, path, rest, json_out)
     isfile(path) || (println(stderr, "error: file not found: ", path); return 2)
     table = _read_csv(path)
+    isempty(table) && (println(stderr, "error: empty CSV: ", path); return 2)
     if cmd == "reference"
         col = _first_numeric(table)
         ri = reference_interval(col; rng = Random.Xoshiro(1))
@@ -137,6 +139,32 @@ function _cli_file(cmd, path, rest, json_out)
         report_ = analyze(study, streams; rng = Random.Xoshiro(1))
         json_out ?
         print(stdout, json_string(study_report_dict(report_))) :
+        (println(report_); println(); println(explain(report_)))
+        println()
+        return 0
+    elseif cmd == "panel"
+        analcol = _optional_col(table, (:analyte, :analyte_name, :test, :assay))
+        analcol === nothing &&
+            (println(stderr, "error: panel CSV needs an analyte column"); return 2)
+        panel = AssayPanel("cli-panel")
+        seen = String[]
+        for r in table
+            a = string(getproperty(r, analcol))
+            a in seen && continue
+            push!(seen, a)
+            sub = [row for row in table if string(getproperty(row, analcol)) == a]
+            stream = from_table(sub; analyte = Symbol(a), unit = "",
+                value = _value_col(table),
+                time = _time_col(table),
+                lot = _optional_col(table, (:reagent_lot, :lot)),
+                instrument = _optional_col(table, (:instrument,)),
+                batch = _optional_col(table, (:batch,)),
+                control = _optional_col(table, (:control,)))
+            push!(panel, stream)
+        end
+        report_ = analyze(panel; rng = Random.Xoshiro(1))
+        json_out ?
+        print(stdout, json_string(panel_report_dict(report_))) :
         (println(report_); println(); println(explain(report_)))
         println()
         return 0

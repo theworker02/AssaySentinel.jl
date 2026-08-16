@@ -11,6 +11,9 @@ report(result, "assay-report.html")
 
 Formats: `.assay` (Julia serialization), `.json`, `.md`, `.html`.
 
+`QualityReport`, `StudyReport`, and `PanelReport` all follow that path.
+Panel reports never pool incompatible units.
+
 `explain` reconstructs the decision path and labels each sentence as
 **observed**, **statistical**, **inference**, or **annotation**.
 

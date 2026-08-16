@@ -270,6 +270,14 @@ function analyze(assay::Assay, table;
     analyze(stream; rng, kwargs...)
 end
 
+"""
+    analyze(panel::AssayPanel; parallel=false, rng)
+
+Analyze each analyte stream independently and return a `PanelReport`
+with a panel reconstruction (status chart, story, provenance).
+Per-analyte RNGs are independent. Units are never pooled.
+`.panel` remains an alias of `.name` for older NamedTuple-style access.
+"""
 function analyze(panel::AssayPanel;
     parallel::Bool = false,
     rng::AbstractRNG = Random.default_rng(),
@@ -277,7 +285,7 @@ function analyze(panel::AssayPanel;
     names = collect(keys(panel.streams))
     results = Vector{QualityReport}(undef, length(names))
     seed = rand(rng, UInt64)
-    if parallel && Threads.nthreads() > 1
+    if parallel && Threads.nthreads() > 1 && !isempty(names)
         Threads.@threads for i in eachindex(names)
             local_rng = Random.Xoshiro(seed + UInt64(i))
             results[i] = analyze(panel.streams[names[i]]; rng = local_rng, kwargs...)
@@ -288,7 +296,17 @@ function analyze(panel::AssayPanel;
             results[i] = analyze(panel.streams[names[i]]; rng = local_rng, kwargs...)
         end
     end
-    (; panel = panel.name, reports = Dict(names[i] => results[i] for i in eachindex(names)))
+    reports = Dict{Symbol, QualityReport}(names[i] => results[i] for i in eachindex(names))
+    rec = reconstruct(reports; rng_seed = seed, name = panel.name)
+    PanelReport(
+        panel.name,
+        reports,
+        SAFETY_NOTICE,
+        string(SCHEMA_VERSION),
+        string(PACKAGE_VERSION),
+        (; n_analytes = length(reports), parallel = parallel, rng_seed = seed),
+        rec,
+    )
 end
 
 function Base.show(io::IO, r::QualityReport)
@@ -354,6 +372,31 @@ function Base.summary(r::QualityReport)
     )
 end
 
+function Base.show(io::IO, r::PanelReport)
+    println(io, "AssaySentinel PanelReport ", r.name)
+    println(io, "schema ", r.schema_version, "  package ", r.package_version)
+    println(io, "analytes: ", length(r.reports))
+    for (k, v) in sort(collect(r.reports); by = x -> string(x[1]))
+        println(io, "  ", k, "  ", _status_label(v.status),
+            "  score=", round(v.score.value; digits = 1), "  n=", v.n)
+    end
+    if r.reconstruction !== nothing
+        println(io, "Reconstruction:")
+        print(io, r.reconstruction.narrative)
+    end
+end
+
+function Base.summary(r::PanelReport)
+    [
+        (
+            analyte = k,
+            status = _status_label(v.status),
+            score = round(v.score.value; digits = 1),
+        )
+        for (k, v) in sort(collect(r.reports); by = x -> string(x[1]))
+    ]
+end
+
 function Base.summary(panel_result::NamedTuple)
     if haskey(panel_result, :reports)
         rows = [
@@ -367,4 +410,18 @@ function Base.summary(panel_result::NamedTuple)
         return rows
     end
     panel_result
+end
+
+"""
+    result(r::PanelReport)
+
+Snapshot of per-analyte status and scores. Analytical process, not clinical risk.
+"""
+function result(r::PanelReport)
+    (
+        name = r.name,
+        n_analytes = length(r.reports),
+        worst = _worst_status(r.reports),
+        analytes = summary(r),
+    )
 end

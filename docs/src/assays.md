@@ -6,8 +6,14 @@ operational events. `AssayPanel` monitors many analytes together.
 ```julia
 panel = AssayPanel("chem-14")
 push!(panel, stream)
-analyze(panel; parallel=true)
+prep = analyze(panel; parallel=true)
+explain(prep)
+report(prep, "panel-report.html")
 ```
+
+`analyze(panel)` returns a `PanelReport` with the same reconstruction /
+HTML / JSON / `.assay` path as a `StudyReport`. Units are never pooled
+across analytes. `.panel` is an alias of `.name`.
 
 `Study` → `Site` → `Instrument` is the hierarchical container for multi-site
 work. `compare_sites` reports statistical site location differences and

@@ -108,7 +108,7 @@ Sentinel Score describe the **analytical process**, not clinical risk.
   </div>
   <div class="as-card">
     <h3>Lots, sites, methods</h3>
-    <p><a href="comparison/">Comparisons</a>, <a href="calibration/">calibration</a>, <a href="batches/">batches</a>, and <a href="reference/">reference intervals</a>.</p>
+    <p><a href="comparison/">Comparisons</a>, <a href="assays/">studies and panels</a>, <a href="calibration/">calibration</a>, <a href="batches/">batches</a>, and <a href="reference/">reference intervals</a>.</p>
   </div>
   <div class="as-card">
     <h3>Methods and proof</h3>

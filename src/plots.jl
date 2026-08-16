@@ -338,3 +338,57 @@ function svg_forest_chart(result::HierarchicalSiteResult;
     println(io, "</svg>")
     String(take!(io))
 end
+
+"""
+    svg_panel_chart(reports; title)
+
+Horizontal Sentinel Score bars for each analyte in a `PanelReport`.
+Scores describe analytical-process stability, not patient risk.
+"""
+function svg_panel_chart(reports::AbstractDict; title = "Panel analyte status")
+    names = sort(collect(keys(reports)); by = string)
+    isempty(names) && return "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"
+    W = 820.0
+    row = 28.0
+    padt, padb, padl, padr = 36.0, 28.0, 140.0, 80.0
+    H = padt + padb + row * length(names)
+    barw = W - padl - padr
+    io = IOBuffer()
+    println(
+        io,
+        """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $W $H" role="img" aria-label="$(_svg_esc(title))">""",
+    )
+    println(io, """<rect width="$W" height="$H" fill="$_CREAM"/>""")
+    println(
+        io,
+        """<text x="16" y="20" fill="$_NAVY" font-family="Segoe UI, sans-serif" font-size="13">$(_svg_esc(title))</text>""",
+    )
+    for (i, k) in enumerate(names)
+        r = reports[k]
+        y = padt + (i - 0.5) * row
+        score = r isa QualityReport ? r.score.value : 0.0
+        status = r isa QualityReport ? r.status : :stable
+        col =
+            status in (:critical, :drift_suspected, :warning) ? "#8B2E2E" :
+            status === :watch ? _AMBER : _TEAL
+        w = max(2.0, barw * clamp(score / 100, 0, 1))
+        println(
+            io,
+            """<text x="12" y="$(y + 4)" fill="$_NAVY" font-size="11" font-family="Segoe UI, sans-serif">$(_svg_esc(k))</text>""",
+        )
+        println(
+            io,
+            """<rect x="$padl" y="$(y - 8)" width="$w" height="16" fill="$col"/>""",
+        )
+        println(
+            io,
+            """<text x="$(padl + w + 6)" y="$(y + 4)" fill="$_NAVY" font-size="10" font-family="Segoe UI, sans-serif">$(round(score; digits=0)) $(_svg_esc(_status_label(status)))</text>""",
+        )
+    end
+    println(
+        io,
+        """<text x="16" y="$(H - 8)" fill="$_MUTED" font-size="10" font-family="Segoe UI, sans-serif">Sentinel Score (0–100) is analytical-process stability, not patient risk. Detection is not correction.</text>""",
+    )
+    println(io, "</svg>")
+    String(take!(io))
+end

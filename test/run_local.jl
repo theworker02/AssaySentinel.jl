@@ -22,6 +22,7 @@ using Statistics
     include("test_comparison.jl")
     include("test_streaming.jl")
     include("test_hierarchy.jl")
+    include("test_panel.jl")
     include("test_simulation.jl")
     include("test_reconstruction.jl")
     include("test_provenance.jl")

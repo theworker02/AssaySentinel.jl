@@ -49,3 +49,17 @@ report(r, "assay-report.html")
 
 Twelve months of glucose-like controls, lots, instruments, and a calibration
 event: `showcase_dataset()` (see [Examples](@ref)).
+
+## Panels and studies
+
+```julia
+prep = analyze(panel)
+report(prep, "panel-report.html")
+
+srep = analyze(study, Dict("Lab-A" => stream_a, "Lab-B" => stream_b))
+report(srep, "study-report.html")
+```
+
+Panel reports do not pool units. Study reports include a forest plot, I², and
+a 95% prediction interval for a new site mean (analytical process, not a
+clinical reference).

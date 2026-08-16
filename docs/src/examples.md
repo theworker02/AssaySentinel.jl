@@ -15,3 +15,13 @@ println(r)
 println(explain(r))
 report(r, "assay-report.html")
 ```
+
+Multi-site and multi-analyte histories use the same `explain` / `report` path:
+
+```julia
+srep = analyze(study, Dict("Lab-A" => a, "Lab-B" => b))
+report(srep, "study-report.html")
+
+prep = analyze(panel)
+report(prep, "panel-report.html")
+```

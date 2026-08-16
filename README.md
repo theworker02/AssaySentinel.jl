@@ -148,6 +148,20 @@ report(srep, "study-report.html")  # forest plot + per-site charts
 Sharing labels (`:global`, `:site_specific`, `:mixed`, `:stable`) and I²
 describe statistical concordance across sites, not a cause.
 
+Multi-analyte panels use the same reconstruction path:
+
+```julia
+panel = AssayPanel("chem-14")
+push!(panel, glucose_stream)
+push!(panel, creatinine_stream)
+prep = analyze(panel)
+explain(prep)
+report(prep, "panel-report.html")  # status chart + per-analyte control charts
+```
+
+Units are never pooled across analytes. `.panel` is an alias of `.name` so
+older NamedTuple-style access still works.
+
 <p align="center">
   <img src="assets/screenshot-report.png" alt="AssaySentinel HTML analytical report" width="720"/>
   <br/>
@@ -186,6 +200,8 @@ do not expect a JuliaHub page yet.
 | Batches | `detect_batch_effects`, `correct_batch_effects` (opt-in only) |
 | Comparison | `compare_methods`, `compare_instruments`, `compare_lots`, `compare_sites` |
 | Reference limits | `reference_interval`, `assess_partitions`, `reference_curve` |
+| Multi-site studies | `hierarchical_sites`, `analyze(study, streams)`, `StudySentinel` |
+| Multi-analyte panels | `AssayPanel`, `analyze(panel)` → `PanelReport` |
 | Streaming | `Sentinel`, `update!`, `onalert` |
 | Simulation | `simulate_assay`, `evaluate_detector`, `showcase_dataset` |
 | Provenance | `explain`, `save`, `report` |
@@ -212,7 +228,8 @@ AssaySentinel targets **Julia 1.10+** (LTS and current stable).
 
 ```bash
 julia --project bin/assaysentinel analyze measurements.csv
-julia --project bin/assaysentinel doctor
+julia --project bin/assaysentinel study measurements.csv
+julia --project bin/assaysentinel panel measurements.csv
 julia --project bin/assaysentinel version
 ```
 

@@ -236,6 +236,31 @@ function explain(r::StudyReport)
     String(take!(io))
 end
 
+function explain(r::PanelReport)
+    io = IOBuffer()
+    println(io, "AssaySentinel panel reconstruction")
+    println(io, "==================================")
+    println(io)
+    println(io, r.safety_notice)
+    println(io)
+    println(io, "Panel: ", r.name, "  schema ", r.schema_version)
+    println(io, "Analytes: ", join(sort(string.(collect(keys(r.reports)))), ", "))
+    println(io, "Worst status: ", _status_label(_worst_status(r.reports)),
+        " (analytical process, not patient risk)")
+    if r.reconstruction !== nothing
+        println(io)
+        println(io, r.reconstruction.narrative)
+        println(io)
+        println(io, r.reconstruction.uncertainty.notes)
+    end
+    for (k, v) in sort(collect(r.reports); by = x -> string(x[1]))
+        println(io, "- ", k, "  ", _status_label(v.status),
+            "  score=", round(v.score.value; digits = 1), "  n=", v.n,
+            "  unit=", v.unit)
+    end
+    String(take!(io))
+end
+
 function explain(x)
     sprint(show, x)
 end

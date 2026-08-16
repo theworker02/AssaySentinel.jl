@@ -19,7 +19,7 @@ Canonical citations for algorithms implemented in AssaySentinel.jl. See also
 | Brown–Forsythe | lot variance | Brown & Forsythe 1974 |
 | ComBat | `correct_batch_effects(...; method=:combat)` | Johnson, Li & Rabinovic 2007 (parametric EB) |
 | Bayesian CP | `method=:bayesian` | Fearnhead 2006 product partition |
-| Turing CP | `method=:turing` (extension) | hierarchical MH via Turing.jl |
+| Turing CP | `method=:turing` (extension) | MH or NUTS; k-cut with `model=:multiple` |
 | Natural cubic spline | `calibrate(...; model=:spline)` | interpolating cubic, not piecewise linear |
 | Reference intervals | `reference_interval` | CLSI EP28-A3c; Box & Cox 1964; Horn 1998; Cole & Green 1992 |
 | Partitioning | `assess_partitions` | Harris & Boyd 1990 |

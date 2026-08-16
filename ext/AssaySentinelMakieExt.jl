@@ -98,4 +98,34 @@ function _group_figure(data, groupcol, value, title)
     fig
 end
 
+"""
+    forest_chart(result::HierarchicalSiteResult)
+
+Makie forest plot: raw means ± 1.96 SE, shrunk means, grand mean, and
+95% prediction-interval guides. Sharing is statistical, not causal.
+"""
+function AssaySentinel.forest_chart(result::AssaySentinel.HierarchicalSiteResult)
+    sites = result.sites
+    fig = Figure(; size = (900, max(280, 48 * length(sites) + 80)), backgroundcolor = :white)
+    ax = Axis(fig[1, 1];
+        title = "Site forest (not causal)",
+        xlabel = "mean",
+        ylabel = "site",
+        titlesize = 16,
+        yreversed = true)
+    ys = collect(1:length(sites))
+    raw = [s.raw_mean for s in sites]
+    se = [s.se > 0 && isfinite(s.se) ? s.se : 0.0 for s in sites]
+    shrunk = [s.shrunk_mean for s in sites]
+    errorbars!(ax, raw, ys, 1.96 .* se; direction = :x, color = "#2F7A78", whiskerwidth = 8)
+    scatter!(ax, raw, ys; color = :transparent, strokecolor = "#1B2838",
+        strokewidth = 1.4, markersize = 10)
+    scatter!(ax, shrunk, ys; color = "#C9892A", markersize = 11, marker = :rect)
+    vlines!(ax, [result.grand_mean]; color = "#1B2838", linewidth = 2)
+    vlines!(ax, [result.prediction_lo, result.prediction_hi];
+        color = "#8A918A", linestyle = :dash, linewidth = 1)
+    ax.yticks = (ys, [s.site for s in sites])
+    fig
+end
+
 end
