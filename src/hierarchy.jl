@@ -72,7 +72,8 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
     uniq = sort(unique(labs))
     length(uniq) < 2 && throw(ArgumentError("hierarchical_sites needs at least two sites"))
 
-    method === :turing && return _turing_hierarchical_sites(vals, labs, ts, uniq; rng, sampler)
+    method === :turing &&
+        return _turing_hierarchical_sites(vals, labs, ts, uniq; rng, sampler)
 
     groups = [vals[labs .== s] for s in uniq]
     times = [ts[labs .== s] for s in uniq]

@@ -296,7 +296,8 @@ function analyze(panel::AssayPanel;
             results[i] = analyze(panel.streams[names[i]]; rng = local_rng, kwargs...)
         end
     end
-    reports = Dict{Symbol, QualityReport}(names[i] => results[i] for i in eachindex(names))
+    reports = Dict{Symbol, QualityReport}(
+        names[i] => results[i] for i in eachindex(names))
     rec = reconstruct(reports; rng_seed = seed, name = panel.name)
     PanelReport(
         panel.name,

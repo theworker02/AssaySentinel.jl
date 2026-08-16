@@ -7,8 +7,12 @@
         for i in 1:24
             push!(
                 s,
-                Measurement(value = μ + 0.4 * randn(rng),
-                    timestamp = t0 + Hour(i), unit = unit, control = true),
+                Measurement(;
+                    value = μ + 0.4 * randn(rng),
+                    timestamp = t0 + Hour(i),
+                    unit = unit,
+                    control = true,
+                ),
             )
         end
         push!(panel, s)

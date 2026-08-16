@@ -255,13 +255,15 @@ function AssaySentinel._turing_hierarchical_sites(vals, labs, ts, uniq; rng,
     if sampler === :nuts
         chn, used = _sample(
             _assay_hierarchical_sites_cont(vals, sid, length(uniq), μ0, σ0),
-            samples, rng, :nuts)
+            samples, rng, :nuts,
+        )
         us = vec(Array(chn[:u]))
         cuts = [clamp(round(Int, 1.5 + (n - 2.0) * u), 2, n - 1) for u in us]
     else
         chn, used = _sample(
             _assay_hierarchical_sites(vals, sid, length(uniq), μ0, σ0),
-            samples, rng, :mh)
+            samples, rng, :mh,
+        )
         cuts = Int.(vec(Array(chn[:cut])))
         used = :mh
     end
@@ -307,13 +309,15 @@ function _turing_from_hierarchical(x, sites, μ0, σ0, samples, rng, sampler)
     if sampler === :nuts
         chn, used = _sample(
             _assay_hierarchical_sites_cont(x, sid, length(uniq), μ0, σ0),
-            samples, rng, :nuts)
+            samples, rng, :nuts,
+        )
         us = vec(Array(chn[:u]))
         cuts = [clamp(round(Int, 1.5 + (n - 2.0) * u), 2, n - 1) for u in us]
     else
         chn, used = _sample(
             _assay_hierarchical_sites(x, sid, length(uniq), μ0, σ0),
-            samples, rng, :mh)
+            samples, rng, :mh,
+        )
         cuts = Int.(vec(Array(chn[:cut])))
     end
     mode = _mode_int(cuts, n)

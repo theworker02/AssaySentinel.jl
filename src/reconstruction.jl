@@ -435,8 +435,7 @@ function reconstruct(reports::Dict{Symbol, QualityReport};
     push!(
         beats,
         StoryBeat("Panel ingest", :stable, nothing, nothing, :observed,
-            "Panel $name: $(length(reports)) analyte(s). Missing/NaN omitted, not zero-filled. Units are not pooled.",
-        ),
+            "Panel $name: $(length(reports)) analyte(s). Missing/NaN omitted, not zero-filled. Units are not pooled."),
     )
     for k in sort(collect(keys(reports)); by = string)
         r = reports[k]

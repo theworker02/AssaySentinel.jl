@@ -15,7 +15,8 @@ function main(args::Vector{String} = ARGS)
         return _cli_doctor()
     elseif cmd == "simulate"
         return _cli_simulate(rest, json_out)
-    elseif cmd in ("analyze", "drift", "batch", "reference", "compare", "report", "study", "panel")
+    elseif cmd in (
+        "analyze", "drift", "batch", "reference", "compare", "report", "study", "panel")
         isempty(rest) && (println(stderr, "error: $cmd requires a CSV path"); return 2)
         return _cli_file(cmd, rest[1], rest[2:end], json_out)
     else
