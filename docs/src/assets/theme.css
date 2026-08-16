@@ -1,0 +1,122 @@
+/* AssaySentinel brand: navy #1B2838, teal #2F7A78, amber #C9892A, cream #F4F1EA */
+
+html.theme--documenter-light {
+    --documenter-color-primary: #2f7a78;
+    --documenter-color-primary-light: #3d9693;
+    --documenter-color-background: #f4f1ea;
+    --documenter-color-text: #1b2838;
+    --documenter-sidebar-background: #1b2838;
+    --documenter-sidebar-color: #f4f1ea;
+    --documenter-sidebar-menu-hover-background: #2f7a78;
+    --documenter-sidebar-menu-hover-color: #f4f1ea;
+    --documenter-sidebar-menu-current-background: #2f7a78;
+    --documenter-sidebar-menu-current-color: #f4f1ea;
+    --documenter-sidebar-menu-search-background: #243242;
+    --documenter-sidebar-menu-search-focus-border: #c9892a;
+}
+
+html.theme--documenter-dark {
+    --documenter-color-primary: #4aa8a4;
+}
+
+.docs-sidebar .docs-logo > img {
+    max-height: 4.75rem;
+}
+
+.as-hero {
+    background: linear-gradient(155deg, #1b2838 0%, #244a52 52%, #2f7a78 100%);
+    color: #f4f1ea;
+    padding: 2.1rem 1.7rem 1.8rem;
+    border-radius: 14px;
+    margin: 0 0 1.6rem;
+    box-shadow: 0 10px 28px rgba(27, 40, 56, 0.22);
+}
+
+.as-hero h1 {
+    color: #f4f1ea;
+    margin: 0.4rem 0 0.35rem;
+    border: 0;
+}
+
+.as-hero .as-tagline {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #c9892a;
+    margin: 0 0 0.75rem;
+}
+
+.as-hero p {
+    color: #e6e1d6;
+    max-width: 46rem;
+}
+
+.as-hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 1.1rem;
+}
+
+.as-hero-links a {
+    background: #c9892a;
+    color: #1b2838 !important;
+    font-weight: 650;
+    padding: 0.38rem 0.85rem;
+    border-radius: 999px;
+    text-decoration: none !important;
+}
+
+.as-hero-links a.as-ghost {
+    background: transparent;
+    color: #f4f1ea !important;
+    border: 1px solid rgba(244, 241, 234, 0.45);
+}
+
+.as-notice {
+    border-left: 5px solid #c9892a;
+    background: #f7efe0;
+    padding: 0.95rem 1.15rem;
+    margin: 1.1rem 0 1.5rem;
+    border-radius: 0 10px 10px 0;
+}
+
+html.theme--documenter-dark .as-notice {
+    background: #2a2418;
+    color: #f4f1ea;
+}
+
+.as-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+    gap: 0.85rem;
+    margin: 1rem 0 1.6rem;
+}
+
+.as-card {
+    background: rgba(47, 122, 120, 0.08);
+    border: 1px solid rgba(27, 40, 56, 0.08);
+    border-radius: 10px;
+    padding: 0.95rem 1rem;
+}
+
+.as-card h3 {
+    margin-top: 0;
+    font-size: 1.05rem;
+}
+
+.as-figure {
+    margin: 1.2rem 0;
+    text-align: center;
+}
+
+.as-figure img {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(27, 40, 56, 0.12);
+}
+
+.as-caption {
+    color: #5b6570;
+    font-size: 0.92rem;
+    margin-top: 0.45rem;
+}

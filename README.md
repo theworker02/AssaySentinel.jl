@@ -16,10 +16,14 @@
 
 <p align="center">
   <a href="https://github.com/theworker02/AssaySentinel.jl/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/theworker02/AssaySentinel.jl/ci.yml?branch=main&style=plastic&label=CI"></a>
-  <a href="https://theworker02.github.io/AssaySentinel.jl"><img alt="Docs" src="https://img.shields.io/badge/docs-stable-2F7A78?style=plastic"></a>
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1B2838?style=plastic"></a>
+  <a href="https://github.com/theworker02/AssaySentinel.jl/actions/workflows/docs.yml"><img alt="Docs build" src="https://img.shields.io/github/actions/workflow/status/theworker02/AssaySentinel.jl/docs.yml?branch=main&style=plastic&label=docs"></a>
+  <a href="https://theworker02.github.io/AssaySentinel.jl/"><img alt="Docs stable" src="https://img.shields.io/badge/docs-stable-2F7A78?style=plastic"></a>
+  <a href="https://theworker02.github.io/AssaySentinel.jl/"><img alt="Docs latest" src="https://img.shields.io/badge/docs-latest-2F7A78?style=plastic"></a>
+  <a href="https://github.com/theworker02/AssaySentinel.jl/releases/tag/v1.3.0"><img alt="Release" src="https://img.shields.io/github/v/release/theworker02/AssaySentinel.jl?style=plastic&label=release&color=1B2838"></a>
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/github/license/theworker02/AssaySentinel.jl?style=plastic&color=1B2838"></a>
   <a href="#julia-compatibility"><img alt="Julia" src="https://img.shields.io/badge/julia-%3E%3D%201.10-9558B2?style=plastic&logo=julia&logoColor=white"></a>
   <a href="#safety-boundary"><img alt="Research use" src="https://img.shields.io/badge/use-research%20only-2F7A78?style=plastic"></a>
+  <a href="https://github.com/theworker02/AssaySentinel.jl"><img alt="GitHub" src="https://img.shields.io/badge/repo-theworker02%2FAssaySentinel.jl-1B2838?style=plastic&logo=github"></a>
   <a href="https://thanks.dev/u/gh/theworker02"><img alt="thanks.dev" src="https://img.shields.io/badge/thanks.dev-theworker02-2F7A78?style=plastic"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/changelog-keep%20a%20changelog-2F7A78?style=plastic"></a>
 </p>
@@ -141,16 +145,25 @@ result = analyze(
 
 ## Install
 
-Julia 1.10 or newer:
+Julia 1.10 or newer. Until the package is on the General registry, add it from GitHub:
 
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/theworker02/AssaySentinel.jl")
 ```
 
+Registration is pending ([General PR #164654](https://github.com/JuliaRegistries/General/pull/164654)).
+After that merge, the usual name install will work:
+
+```julia
+using Pkg
+Pkg.add("AssaySentinel")   # after General registration
+```
+
 The core package is **stdlib-only**. Makie, Unitful, Measurements, OnlineStats,
 and Turing are optional extensions. They are never required to analyze, explain,
-or write a report.
+or write a report. The package is **not** on JuliaHub until General merges;
+do not expect a JuliaHub page yet.
 
 ## Scope
 

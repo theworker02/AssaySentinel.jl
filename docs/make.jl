@@ -2,37 +2,68 @@ using Documenter
 using DocumenterCitations
 using AssaySentinel
 
+function _stage_docs_media()
+    srcdir = joinpath(@__DIR__, "..", "assets")
+    dstdir = joinpath(@__DIR__, "src", "assets")
+    mkpath(dstdir)
+    for name in (
+        "demo.gif",
+        "how-it-works.svg",
+        "screenshot-reconstruction.png",
+        "screenshot-report.png",
+        "screenshot-control-chart.png",
+        "logo-dark.svg",
+    )
+        src = joinpath(srcdir, name)
+        isfile(src) && cp(src, joinpath(dstdir, name); force = true)
+    end
+    favicon_src = joinpath(srcdir, "icon.png")
+    isfile(favicon_src) && cp(favicon_src, joinpath(dstdir, "favicon.png"); force = true)
+    return nothing
+end
+
+_stage_docs_media()
+
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :authoryear)
 
 makedocs(;
     sitename = "AssaySentinel.jl",
     authors = "theworker02",
     modules = [AssaySentinel],
+    repo = Documenter.Remotes.GitHub("theworker02", "AssaySentinel.jl"),
     format = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
+        prettyurls = !("local" in ARGS),
         canonical = "https://theworker02.github.io/AssaySentinel.jl",
+        edit_link = "main",
+        assets = ["assets/theme.css"],
+        collapselevel = 1,
+        ansicolor = true,
         footer = "AssaySentinel.jl is not a diagnostic medical device.",
     ),
     pages = [
-        "Introduction" => "index.md",
+        "Home" => "index.md",
         "Quickstart" => "quickstart.md",
-        "Measurements" => "measurements.md",
-        "Assays" => "assays.md",
-        "QC" => "qc.md",
-        "Drift Detection" => "drift.md",
-        "Batch Effects" => "batches.md",
-        "Calibration" => "calibration.md",
-        "Reference Intervals" => "reference.md",
-        "Method Comparison" => "comparison.md",
-        "Streaming" => "streaming.md",
+        "Guide" => [
+            "Measurements" => "measurements.md",
+            "Assays" => "assays.md",
+            "Quality control" => "qc.md",
+            "Drift and change points" => "drift.md",
+            "Batch effects" => "batches.md",
+            "Calibration" => "calibration.md",
+            "Reference intervals" => "reference.md",
+            "Method comparison" => "comparison.md",
+            "Streaming" => "streaming.md",
+            "Simulation" => "simulation.md",
+            "Provenance and reports" => "provenance.md",
+        ],
         "Extensions" => "extensions.md",
-        "Simulation" => "simulation.md",
-        "Provenance" => "provenance.md",
-        "API" => "api.md",
-        "Statistical Methods" => "statistical_methods.md",
-        "Validation" => "validation.md",
         "Examples" => "examples.md",
-        "References" => "references.md",
+        "API" => "api.md",
+        "Methods" => [
+            "Statistical methods" => "statistical_methods.md",
+            "Validation" => "validation.md",
+            "References" => "references.md",
+        ],
     ],
     plugins = [bib],
     checkdocs = :exports,

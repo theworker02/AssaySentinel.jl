@@ -10,6 +10,11 @@ Manifest.toml
 docs/build/
 docs/site/
 /docs/src/assets/generated/
+/docs/src/assets/demo.gif
+/docs/src/assets/how-it-works.svg
+/docs/src/assets/screenshot-*.png
+/docs/src/assets/logo-dark.svg
+/docs/src/assets/favicon.png
 
 # OS / editor
 .DS_Store

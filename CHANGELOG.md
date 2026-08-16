@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- README badges, pending-General install notes, and a branded Documenter landing page
+
 ### Fixed
 
 - `Project.toml` used the wrong Logging stdlib UUID, which blocked CI instantiate

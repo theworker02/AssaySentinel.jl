@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| 0.1.x | Yes |
+| 1.3.x | Yes |
+| 0.1.x | Security fixes only |
 
 ## Reporting
 

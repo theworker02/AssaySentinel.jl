@@ -44,4 +44,8 @@ Any Tables.jl source is accepted. DataFrames is not required internally.
 sim = simulate_assay(n=800, drift=:step, drift_start=500)
 r = analyze(sim.stream)
 explain(r)
+report(r, "assay-report.html")
 ```
+
+Twelve months of glucose-like controls, lots, instruments, and a calibration
+event: `showcase_dataset()` (see [Examples](@ref)).

@@ -13,4 +13,5 @@ data = showcase_dataset()
 r = analyze(data.stream)
 println(r)
 println(explain(r))
+report(r, "assay-report.html")
 ```
