@@ -35,7 +35,10 @@ function hierarchical_sites(data;
         push!(sites, string(s))
         push!(vals, Float64(v))
         t = _rowget(r, timestamps)
-        push!(ts, t === nothing || t isa Missing ? DateTime(2020, 1, 1) + Hour(i) : DateTime(t))
+        push!(
+            ts,
+            t === nothing || t isa Missing ? DateTime(2020, 1, 1) + Hour(i) : DateTime(t),
+        )
     end
     hierarchical_sites(vals, sites; timestamps = ts, method, rng)
 end
@@ -174,7 +177,8 @@ function hierarchical_sites(values::AbstractVector, sites::AbstractVector;
         "Attribution :$attr is a statistical description of sharing, not a cause.",
     ]
     HierarchicalSiteResult(
-        effects, μ, τ, has_within ? sqrt(σ2) : 0.0, global_d, Qd, pd, attr, conc, i2, plo, phi, ev,
+        effects, μ, τ, has_within ? sqrt(σ2) : 0.0, global_d, Qd, pd, attr, conc, i2, plo,
+        phi, ev,
         "Hierarchical site model. Temporal association across sites is not causation. Not a diagnostic device.",
         (;
             method = :eb,

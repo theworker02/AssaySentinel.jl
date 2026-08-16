@@ -292,7 +292,8 @@ function reconstruct(hier::HierarchicalSiteResult,
     push!(
         beats,
         StoryBeat("Multi-site ingest", :stable, nothing, nothing, :observed,
-            "Study $name: $(length(hier.sites)) sites. Missing/NaN omitted, not zero-filled."),
+            "Study $name: $(length(hier.sites)) sites. Missing/NaN omitted, not zero-filled.",
+        ),
     )
     for s in hier.sites
         if s.drift.detected
@@ -319,7 +320,8 @@ function reconstruct(hier::HierarchicalSiteResult,
     push!(
         beats,
         StoryBeat(share, :changepoint, nothing, nothing, :algorithmic,
-            "Attribution :$(hier.attribution); I²=$(round(hier.i2; digits=1))%; concordance=$(round(hier.concordance; digits=2)). Statistical sharing, not causation."),
+            "Attribution :$(hier.attribution); I²=$(round(hier.i2; digits=1))%; concordance=$(round(hier.concordance; digits=2)). Statistical sharing, not causation.",
+        ),
     )
     ub = UncertaintyBudget(
         0,
