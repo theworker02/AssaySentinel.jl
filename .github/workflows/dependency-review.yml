@@ -11,6 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check if dependency graph is enabled
+        id: graph
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/vulnerability-alerts"
       - uses: actions/dependency-review-action@v4
+        if: steps.graph.outcome == 'success'
         with:
           fail-on-severity: high
+      - name: Skip when dependency graph is off
+        if: steps.graph.outcome != 'success'
+        run: |
+          echo "::notice::Dependency graph is disabled, so dependency-review cannot run."
+          echo "Enable it at Settings → Code security → Dependabot alerts."
