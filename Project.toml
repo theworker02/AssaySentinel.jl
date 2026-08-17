@@ -1,7 +1,7 @@
 name = "AssaySentinel"
 uuid = "ff2b576f-490a-4543-9734-7d4d656bfeb7"
-authors = ["theworker02"]
 version = "1.5.0"
+authors = ["theworker02"]
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -41,7 +41,7 @@ SHA = "0.7, 1"
 Serialization = "1"
 Statistics = "1"
 Test = "1"
-Turing = "0.34, 0.35, 0.36, 0.37, 0.38, 0.39"
+Turing = "0.34 - 0.46"
 UUIDs = "1"
 Unitful = "1"
 julia = "1.10"
