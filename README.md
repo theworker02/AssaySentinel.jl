@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/logo.svg" alt="AssaySentinel" width="168"/>
 </p>
 
@@ -10,8 +10,8 @@
 
 <p align="center">
   A Julia instrument for scientists and laboratory physicians who need to know<br/>
-  whether the <em>measurement process</em> changed — instruments, lots, calibrations,<br/>
-  batches, and QC — and to reconstruct that conclusion later.
+  whether the <em>measurement process</em> changed â€” instruments, lots, calibrations,<br/>
+  batches, and QC â€” and to reconstruct that conclusion later.
 </p>
 
 <p align="center">
@@ -29,11 +29,11 @@
 </p>
 
 <p align="center">
-  <a href="#in-practice">Quick start</a> ·
-  <a href="https://theworker02.github.io/AssaySentinel.jl">Docs</a> ·
-  <a href="STATISTICAL_METHODS.md">Methods</a> ·
-  <a href="VALIDATION.md">Validation</a> ·
-  <a href="https://github.com/sponsors/theworker02">Sponsors</a> ·
+  <a href="#in-practice">Quick start</a> Â·
+  <a href="https://theworker02.github.io/AssaySentinel.jl">Docs</a> Â·
+  <a href="STATISTICAL_METHODS.md">Methods</a> Â·
+  <a href="VALIDATION.md">Validation</a> Â·
+  <a href="https://github.com/sponsors/theworker02">Sponsors</a> Â·
   <a href="https://thanks.dev/u/gh/theworker02">thanks.dev</a>
 </p>
 
@@ -72,8 +72,8 @@ attach a disease name to a patient result.
 ## How it works
 
 A scientist drops a measurement history in. AssaySentinel runs an explainable
-detector bank, then returns a reconstruction — a dated story, an uncertainty
-budget, charts, and a provenance graph — through `explain` and `report`.
+detector bank, then returns a reconstruction â€” a dated story, an uncertainty
+budget, charts, and a provenance graph â€” through `explain` and `report`.
 
 <p align="center">
   <img src="assets/how-it-works.svg" alt="How AssaySentinel reconstructs a measurement history: ingest, detect, reconstruct, deliver" width="880"/>
@@ -93,11 +93,11 @@ Every `analyze` call is expected to be:
 | **Reproducible** | `rng` seed and input fingerprint travel with the conclusion |
 | **Uncertainty-aware** | combined SD, RMS(u), weighted mean, magnitude standard error |
 | **Plotted** | control chart, reconstruction timeline, lot / instrument strips, provenance |
-| **Provenance-complete** | ingest → outliers → change-point → drift → reconstruct, each tagged `[observed]`, `[statistical]`, `[algorithmic]`, or `[annotation]` |
+| **Provenance-complete** | ingest â†’ outliers â†’ change-point â†’ drift â†’ reconstruct, each tagged `[observed]`, `[statistical]`, `[algorithmic]`, or `[annotation]` |
 
 The pedagogical chain scientists read first is:
 
-**Stable → Calibration → Lot change → Drift**
+**Stable â†’ Calibration â†’ Lot change â†’ Drift**
 
 `explain` then shows the dated beats the detectors actually reconstructed on
 *this* history. That second story is allowed to be messier. The data are.
@@ -121,7 +121,7 @@ report(result, "assay-report.html")
 `showcase_dataset()` is twelve months of synthetic glucose controls: three
 reagent lots, two instruments, a calibration event, gradual drift, a variance
 shift, and a handful of control failures. The HTML report is the same object
-`explain` narrates — cream page, navy type, teal/amber charts, safety notice
+`explain` narrates â€” cream page, navy type, teal/amber charts, safety notice
 on the first screen.
 
 From any Tables.jl source (DataFrames is not required internally):
@@ -145,7 +145,7 @@ explain(srep)
 report(srep, "study-report.html")  # forest plot + per-site charts
 ```
 
-Sharing labels (`:global`, `:site_specific`, `:mixed`, `:stable`) and I²
+Sharing labels (`:global`, `:site_specific`, `:mixed`, `:stable`) and IÂ²
 describe statistical concordance across sites, not a cause.
 
 Multi-analyte panels use the same reconstruction path:
@@ -165,7 +165,7 @@ older NamedTuple-style access still works.
 <p align="center">
   <img src="assets/screenshot-report.png" alt="AssaySentinel HTML analytical report" width="720"/>
   <br/>
-  <img src="assets/screenshot-control-chart.png" alt="Levey–Jennings control chart with lot and calibration events" width="720"/>
+  <img src="assets/screenshot-control-chart.png" alt="Leveyâ€“Jennings control chart with lot and calibration events" width="720"/>
 </p>
 
 ## Install
@@ -195,13 +195,13 @@ do not expect a JuliaHub page yet.
 | Area | Entry points |
 | --- | --- |
 | Drift / change points | `detect_drift`, `detect_changes` (`:auto` explains its choice) |
-| QC | `monitor`, `westgard_rules`, `@qcrule`, Levey–Jennings data |
+| QC | `monitor`, `westgard_rules`, `@qcrule`, Leveyâ€“Jennings data |
 | Calibration | `calibrate`, `compare_calibrations` |
 | Batches | `detect_batch_effects`, `correct_batch_effects` (opt-in only) |
 | Comparison | `compare_methods`, `compare_instruments`, `compare_lots`, `compare_sites` |
 | Reference limits | `reference_interval`, `assess_partitions`, `reference_curve` |
 | Multi-site studies | `hierarchical_sites`, `analyze(study, streams)`, `StudySentinel` |
-| Multi-analyte panels | `AssayPanel`, `analyze(panel)` → `PanelReport` |
+| Multi-analyte panels | `AssayPanel`, `analyze(panel)` â†’ `PanelReport` |
 | Streaming | `Sentinel`, `update!`, `onalert` |
 | Simulation | `simulate_assay`, `evaluate_detector`, `showcase_dataset` |
 | Provenance | `explain`, `save`, `report` |
@@ -238,8 +238,8 @@ JSON output: add `--json`.
 ## Documentation and methods
 
 - [Published docs](https://theworker02.github.io/AssaySentinel.jl)
-- [`STATISTICAL_METHODS.md`](STATISTICAL_METHODS.md) — estimators, penalties, and citations
-- [`VALIDATION.md`](VALIDATION.md) — what has been checked, and what has not
+- [`STATISTICAL_METHODS.md`](STATISTICAL_METHODS.md) â€” estimators, penalties, and citations
+- [`VALIDATION.md`](VALIDATION.md) â€” what has been checked, and what has not
 - [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Repository assets
@@ -258,9 +258,10 @@ please cite the package and the statistical methods you invoked
 
 ## Sponsors
 
-[GitHub Sponsors](https://github.com/sponsors/theworker02) ·
+[GitHub Sponsors](https://github.com/sponsors/theworker02) Â·
 [thanks.dev/u/gh/theworker02](https://thanks.dev/u/gh/theworker02)
 
 ## License
 
-[MIT](LICENSE) © 2026 AssaySentinel Contributors
+**Source-available proprietary** — evaluation under [LICENSE](./LICENSE); commercial / production use via [COMMERCIAL.md](./COMMERCIAL.md). See [LICENSE_TRANSITION_NOTICE.md](./LICENSE_TRANSITION_NOTICE.md) and [NOTICE](./NOTICE).
+
